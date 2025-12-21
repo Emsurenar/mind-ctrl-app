@@ -138,6 +138,12 @@
             100% { transform: scale(0) rotate(720deg); opacity: 0; filter: blur(10px); }
         }
         .animate-suck { animation: suck-in 0.5s ease-in forwards; pointer-events: none; }
+
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow { animation: spin-slow 25s linear infinite; }
     </style>
 </head>
 <body>
@@ -370,37 +376,6 @@
                 return () => clearInterval(soundInterval);
             }, [state, data.goal]);
 
-            // Starta tyst ljud för att förhindra att iOS Safari pausar scriptet när skärmen släcks
-            useEffect(() => {
-                if (state === 'running' && !keepAliveAudioRef.current) {
-                    try {
-                        const AudioContext = window.AudioContext || window.webkitAudioContext;
-                        if (AudioContext) {
-                            const ctx = new AudioContext();
-                            const osc = ctx.createOscillator();
-                            const gain = ctx.createGain();
-                            osc.connect(gain);
-                            gain.connect(ctx.destination);
-                            osc.type = 'sine';
-                            osc.frequency.value = 60; 
-                            gain.gain.value = 0.0001; // Nästan tyst
-                            osc.start();
-                            keepAliveAudioRef.current = { ctx, osc };
-
-                            // Sätt Media Session status
-                            if ('mediaSession' in navigator) {
-                                navigator.mediaSession.metadata = new MediaMetadata({
-                                    title: "Fokus pågår",
-                                    artist: "M-CERE",
-                                    album: data.goal || "Fokuspass"
-                                });
-                                navigator.mediaSession.playbackState = "playing";
-                            }
-                        }
-                    } catch (e) { console.error("Keep-alive audio error", e); }
-                }
-            }, [state]);
-
             const startSession = () => {
                 const totalSeconds = parseInt(data.durationMinutes) * 60;
                 setRemaining(totalSeconds);
@@ -412,6 +387,34 @@
                 if ('Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
+
+                // Starta tyst ljud för att förhindra att iOS Safari pausar scriptet när skärmen släcks
+                // Måste göras direkt vid användarinteraktion (klick) för att fungera på iOS
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        const ctx = new AudioContext();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.value = 60; 
+                        gain.gain.value = 0.0001; // Nästan tyst
+                        osc.start();
+                        keepAliveAudioRef.current = { ctx, osc };
+
+                        // Sätt Media Session status
+                        if ('mediaSession' in navigator) {
+                            navigator.mediaSession.metadata = new MediaMetadata({
+                                title: "Fokus pågår",
+                                artist: "M-CERE",
+                                album: data.goal || "Fokuspass"
+                            });
+                            navigator.mediaSession.playbackState = "playing";
+                        }
+                    }
+                } catch (e) { console.error("Keep-alive audio error", e); }
             };
 
             const stopAlarm = () => {
@@ -461,7 +464,7 @@
                 <div className="p-4 h-full flex flex-col">
                     <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Fokus</h2>
-                        <button onClick={() => setShowGuide(true)} className="text-slate-500 hover:text-white transition-colors"><IconHelp /></button>
+                        <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto space-y-4 pb-4">
@@ -519,21 +522,24 @@
             if (state === 'running') {
                 const progress = ((initialDuration - remaining) / initialDuration) * 100;
                 return (
-                    <div className="flex flex-col h-full p-4 relative pt-6">
-                        {/* Progress bar background */}
-                        <div className="absolute top-0 left-0 h-2 bg-slate-800 w-full">
-                            <div className="h-full bg-green-500 transition-all duration-1000" style={{width: `${progress}%`}}></div>
+                    <div className="flex flex-col h-full p-4 relative overflow-hidden">
+                        {/* Organic Progress Background */}
+                        <div 
+                            className="absolute inset-0 bg-orange-600/30 transition-[clip-path] duration-1000 ease-linear"
+                            style={{ clipPath: `circle(${progress * 1.5}% at 0 0)` }}
+                        >
+                            <div className="absolute inset-[-100%] w-[300%] h-[300%] bg-gradient-to-br from-orange-500 via-red-500 to-yellow-500 animate-spin-slow opacity-70 blur-3xl"></div>
                         </div>
 
-                        <div className="flex-1 flex flex-col items-center justify-center">
-                            <div className="text-7xl font-mono font-bold text-green-400 mb-8 tracking-tighter">{formatTime(remaining)}</div>
+                        <div className="flex-1 flex flex-col items-center justify-center relative z-10">
+                            <div className="text-7xl font-mono font-bold text-white mb-8 tracking-tighter drop-shadow-lg">{formatTime(remaining)}</div>
                             <div className="text-center mb-8 space-y-2 max-w-xs">
-                                <p className={`text-white font-bold ${data.challenges ? 'text-lg' : 'text-2xl'}`}>{data.goal}</p>
-                                {data.challenges && <p className="text-slate-400 text-sm">Utmaning: {data.challenges}</p>}
+                                <p className={`text-white font-bold drop-shadow-md ${data.challenges ? 'text-lg' : 'text-2xl'}`}>{data.goal}</p>
+                                {data.challenges && <p className="text-orange-200/80 text-sm drop-shadow-md">Utmaning: {data.challenges}</p>}
                             </div>
                         </div>
                         
-                        <button className="text-slate-500 hover:text-white underline text-sm mt-4 text-center" onClick={cancelSession}>Avbryt pass</button>
+                        <button className="text-slate-200/80 hover:text-white underline text-sm mt-4 text-center relative z-10" onClick={cancelSession}>Avbryt pass</button>
                     </div>
                 );
             }
@@ -640,7 +646,7 @@
                 <div className="p-4 h-full flex flex-col relative">
                     <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Impulser</h2>
-                        <button onClick={() => setShowGuide(true)} className="text-slate-500 hover:text-white transition-colors"><IconHelp /></button>
+                        <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
                     <div 
@@ -935,10 +941,10 @@
                                 <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
                                 <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
                             </div>
-                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
+                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 <IconHelp />
                             </button>
-                            <button onClick={onOpenSettings} className="p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
+                            <button onClick={onOpenSettings} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 <IconSettings />
                             </button>
                         </div>
@@ -1485,7 +1491,7 @@
                 <div className="p-4 h-full flex flex-col relative">
                     <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Att göra</h2>
-                        <button onClick={() => setShowGuide(true)} className="text-slate-500 hover:text-white transition-colors"><IconHelp /></button>
+                        <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-3 pb-20">
@@ -1653,8 +1659,8 @@
                     <div className="mb-6 flex justify-between items-start">
                         <h2 className="text-3xl font-bold text-white">Vanor</h2>
                         <div className="flex gap-2">
-                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
-                            <button onClick={() => setView(view === 'list' ? 'calendar' : 'list')} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors">
+                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
+                            <button onClick={() => setView(view === 'list' ? 'calendar' : 'list')} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 {view === 'list' ? <IconCalendar /> : <IconList />}
                             </button>
                         </div>
