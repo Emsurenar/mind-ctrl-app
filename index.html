@@ -111,14 +111,19 @@
         .loader-container { position: relative; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; }
         .earth {
             width: 32px; height: 32px; border-radius: 50%;
-            background: linear-gradient(110deg, #10b981 30%, #2563eb 70%);
+            background: radial-gradient(circle at 30% 30%, #6ee7b7, #2563eb);
             box-shadow: inset -4px -4px 8px rgba(0,0,0,0.3), 0 0 15px rgba(37,99,235,0.4);
             animation: spin 6s linear infinite;
             z-index: 10;
         }
         .orbit {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            animation: spin 2s linear infinite;
+            position: absolute;
+            width: 80px;  /* Bredd på ellipsen */
+            height: 45px; /* Höjd på ellipsen */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 3s linear infinite; /* Banans hastighet */
         }
         .moon {
             position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
@@ -199,10 +204,32 @@
             }
         };
 
+        const GuideModal = ({ title, steps, onClose }) => (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onClose}>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                        <h3 className="font-bold text-white text-lg">{title}</h3>
+                        <button onClick={onClose} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
+                    </div>
+                    <div className="p-6 overflow-y-auto space-y-4 text-sm text-slate-300">
+                        {steps.map((step, i) => (
+                            <div key={i} className="flex gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-bold text-xs border border-slate-700">{i+1}</div>
+                                <p>{step}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 border-t border-slate-800 mt-auto">
+                        <button className="btn-primary w-full" onClick={onClose}>Stäng</button>
+                    </div>
+                </div>
+            </div>
+        );
+
         const NavButton = ({ active, icon, label, onClick }) => (
             <button 
                 onClick={onClick}
-                className={`flex flex-col items-center justify-center p-2 flex-1 transition-colors ${active ? 'text-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`flex flex-col items-center justify-center p-2 flex-1 transition-all active:scale-90 ${active ? 'text-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
             >
                 {icon}
                 <span className="text-xs mt-1">{label}</span>
@@ -218,6 +245,7 @@
             const [review, setReview] = useState({ success: true, satisfaction: 50 });
             const [sessionBehaviors, setSessionBehaviors] = useState([]);
             const keepAliveAudioRef = useRef(null);
+            const [showGuide, setShowGuide] = useState(false);
 
             // Städa upp keep-alive ljudet när vi lämnar 'running' state
             useEffect(() => {
@@ -230,6 +258,54 @@
                 }
             }, [state]);
             
+            // --- PERSISTENCE LOGIC ---
+            useEffect(() => {
+                const saved = localStorage.getItem('mcere_timer_state');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.state && parsed.state !== 'setup') {
+                            if (parsed.data) setData(parsed.data);
+                            setTargetTime(parsed.targetTime);
+                            setInitialDuration(parsed.initialDuration);
+                            setSessionBehaviors(parsed.sessionBehaviors || []);
+                            if (parsed.review) setReview(parsed.review);
+
+                            if (parsed.state === 'running') {
+                                const now = Date.now();
+                                const rem = Math.max(0, Math.round((parsed.targetTime - now) / 1000));
+                                setRemaining(rem);
+                                if (rem <= 0) {
+                                    setState('alarm');
+                                } else {
+                                    setState('running');
+                                }
+                            } else {
+                                setState(parsed.state);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error restoring timer:", e);
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                if (state === 'setup') {
+                    localStorage.removeItem('mcere_timer_state');
+                } else {
+                    const stateToSave = {
+                        state,
+                        targetTime,
+                        initialDuration,
+                        sessionBehaviors,
+                        data,
+                        review
+                    };
+                    localStorage.setItem('mcere_timer_state', JSON.stringify(stateToSave));
+                }
+            }, [state, targetTime, initialDuration, sessionBehaviors, data, review]);
+
             // Timer logic
             useEffect(() => {
                 let interval;
@@ -258,6 +334,27 @@
                 return () => clearInterval(soundInterval);
             }, [state, data.goal]);
 
+            // Starta tyst ljud för att förhindra att iOS Safari pausar scriptet när skärmen släcks
+            useEffect(() => {
+                if (state === 'running' && !keepAliveAudioRef.current) {
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            const ctx = new AudioContext();
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            osc.type = 'sine';
+                            osc.frequency.value = 60; 
+                            gain.gain.value = 0.0001; // Nästan tyst
+                            osc.start();
+                            keepAliveAudioRef.current = { ctx, osc };
+                        }
+                    } catch (e) { console.error("Keep-alive audio error", e); }
+                }
+            }, [state]);
+
             const startSession = () => {
                 const totalSeconds = parseInt(data.durationMinutes) * 60;
                 setRemaining(totalSeconds);
@@ -269,23 +366,6 @@
                 if ('Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
-
-                // Starta tyst ljud för att förhindra att iOS Safari pausar scriptet när skärmen släcks
-                try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        const ctx = new AudioContext();
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        osc.type = 'sine';
-                        osc.frequency.value = 60; 
-                        gain.gain.value = 0.0001; // Nästan tyst
-                        osc.start();
-                        keepAliveAudioRef.current = { ctx, osc };
-                    }
-                } catch (e) { console.error("Keep-alive audio error", e); }
             };
 
             const stopAlarm = () => {
@@ -333,8 +413,9 @@
 
             if (state === 'setup') return (
                 <div className="p-4 h-full flex flex-col">
-                    <div className="mb-6">
+                    <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Fokus</h2>
+                        <button onClick={() => setShowGuide(true)} className="text-slate-500 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto space-y-4 pb-4">
@@ -378,6 +459,15 @@
                     <div className="mt-2">
                         <button disabled={isInvalid} className={`w-full block font-bold text-xl py-4 rounded-2xl transition-all duration-500 shadow-xl ${isInvalid ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:scale-[1.02] active:scale-[0.98] shadow-orange-900/20'}`} onClick={startSession}>Starta timer</button>
                     </div>
+
+                    {showGuide && <GuideModal title="Guide: Fokus" onClose={() => setShowGuide(false)} steps={[
+                        "Välj hur länge du vill fokusera (15-60 min).",
+                        "Skriv ett tydligt mål för passet.",
+                        "Ange eventuella utmaningar och din motivationsnivå.",
+                        "Klicka på 'Starta timer'. Ett tyst ljud spelas för att hålla appen aktiv i bakgrunden.",
+                        "Jobba fokuserat tills klockan ringer.",
+                        "Utvärdera passet efteråt: Blev du klar? Hur kändes det?"
+                    ]} />}
                 </div>
             );
 
@@ -450,6 +540,7 @@
             const [isAdding, setIsAdding] = useState(false);
             const [showHistory, setShowHistory] = useState(false);
             const [resetTrigger, setResetTrigger] = useState(0);
+            const [showGuide, setShowGuide] = useState(false);
             const longPressTimer = useRef(null);
 
             useEffect(() => {
@@ -502,8 +593,9 @@
 
             return (
                 <div className="p-4 h-full flex flex-col relative">
-                    <div className="mb-6">
+                    <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Impulser</h2>
+                        <button onClick={() => setShowGuide(true)} className="text-slate-500 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
                     <div 
@@ -647,6 +739,14 @@
                             </div>
                         </div>
                     )}
+
+                    {showGuide && <GuideModal title="Guide: Impulser" onClose={() => setShowGuide(false)} steps={[
+                        "Känner du ett sug att göra något annat (kolla sociala medier, äta godis)?",
+                        "Skriv in impulsen och hur lång tid det tar.",
+                        "Appen räknar ut en väntetid (ofta 3x tiden).",
+                        "När väntetiden är över, välj om du vill 'Göra' det eller 'Glömma' det.",
+                        "Håll inne på statistiken för att nollställa räknaren."
+                    ]} />}
                 </div>
             );
         };
@@ -658,6 +758,7 @@
             const [statsView, setStatsView] = useState(null);
             const [selectedGraphBarIndex, setSelectedGraphBarIndex] = useState(null);
             const [habitStats, setHabitStats] = useState({ doneToday: 0, totalActive: 0, streak: 0, weeklyDone: 0, weeklyTotal: 0 });
+            const [showGuide, setShowGuide] = useState(false);
 
             const getGreeting = () => {
                 const h = new Date().getHours();
@@ -789,6 +890,9 @@
                                 <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
                                 <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
                             </div>
+                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
+                                <IconHelp />
+                            </button>
                             <button onClick={onOpenSettings} className="p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
                                 <IconSettings />
                             </button>
@@ -1285,6 +1389,14 @@
                             </div>
                         </div>
                     )}
+
+                    {showGuide && <GuideModal title="Guide: Start" onClose={() => setShowGuide(false)} steps={[
+                        "Här får du en överblick över din aktivitet.",
+                        "Växla mellan '24h' och '7d' för att se statistik för dygnet eller veckan.",
+                        "Klicka på graferna (Fokus, Uppgifter, Vanor) för att se detaljerad statistik.",
+                        "Längst ner ser du en logg över dina senaste händelser.",
+                        "Använd kugghjulet för att komma till inställningar."
+                    ]} />}
                 </div>
             );
         };
@@ -1297,6 +1409,7 @@
             const [viewingTodo, setViewingTodo] = useState(null);
             const longPressTimer = useRef(null);
             const isLongPress = useRef(false);
+            const [showGuide, setShowGuide] = useState(false);
 
             const handleLongPressStart = (e, todo) => {
                 if (e.target.closest('button')) return; // Ignorera om man klickar på knappar
@@ -1316,8 +1429,9 @@
 
             return (
                 <div className="p-4 h-full flex flex-col relative">
-                    <div className="mb-6">
+                    <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Att göra</h2>
+                        <button onClick={() => setShowGuide(true)} className="text-slate-500 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-3 pb-20">
@@ -1424,6 +1538,14 @@
                             </div>
                         </div>
                     )}
+
+                    {showGuide && <GuideModal title="Guide: Att göra" onClose={() => setShowGuide(false)} steps={[
+                        "Lägg till uppgifter med tidsestimat och prioritet.",
+                        "Klicka på 'Play'-ikonen för att starta ett fokuspass direkt för den uppgiften.",
+                        "Klicka på en uppgift för att se detaljer och anteckningar.",
+                        "Håll inne på en uppgift för att redigera den.",
+                        "Klicka på 'Check'-ikonen när uppgiften är klar."
+                    ]} />}
                 </div>
             );
         };
@@ -1437,6 +1559,7 @@
             const isLongPress = useRef(false);
             const [view, setView] = useState('list');
             const [calendarDate, setCalendarDate] = useState(new Date());
+            const [showGuide, setShowGuide] = useState(false);
 
             const handleLongPressStart = (habit) => {
                 isLongPress.current = false;
@@ -1475,9 +1598,12 @@
                 <div className="p-4 h-full flex flex-col relative">
                     <div className="mb-6 flex justify-between items-start">
                         <h2 className="text-3xl font-bold text-white">Vanor</h2>
-                        <button onClick={() => setView(view === 'list' ? 'calendar' : 'list')} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors">
-                            {view === 'list' ? <IconCalendar /> : <IconList />}
-                        </button>
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
+                            <button onClick={() => setView(view === 'list' ? 'calendar' : 'list')} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors">
+                                {view === 'list' ? <IconCalendar /> : <IconList />}
+                            </button>
+                        </div>
                     </div>
 
                     {view === 'list' ? (
@@ -1599,6 +1725,14 @@
                             </div>
                         </div>
                     )}
+
+                    {showGuide && <GuideModal title="Guide: Vanor" onClose={() => setShowGuide(false)} steps={[
+                        "Lägg till vanor du vill utföra dagligen.",
+                        "Klicka på en vana i listan för att markera den som klar för idag.",
+                        "Håll inne på en vana för att redigera eller ta bort den.",
+                        "Använd knappen uppe till höger för att växla till kalendervy.",
+                        "I kalendern ser du din historik och streaks."
+                    ]} />}
                 </div>
             );
         };
@@ -2114,7 +2248,7 @@
                         {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} deleteLog={deleteLog} />}
                         {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} />}
                     </div>
-                    <div className="h-16 bg-slate-900 border-t border-slate-800 flex justify-around items-center">
+                    <div className="h-16 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-4">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
                         <NavButton active={activeTab === 'todo'} onClick={() => setActiveTab('todo')} icon={<IconCheck />} label="To-do" />
                         <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<IconHome />} label="Start" />
