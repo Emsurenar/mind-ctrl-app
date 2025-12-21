@@ -139,11 +139,32 @@
         }
         .animate-suck { animation: suck-in 0.5s ease-in forwards; pointer-events: none; }
 
-        @keyframes spin-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        /* Chaotic Smoke Animations */
+        @keyframes smoke-1 {
+            0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.2); }
+            33% { transform: translate3d(5%, 5%, 0) rotate(120deg) scale(1.4); }
+            66% { transform: translate3d(-5%, 10%, 0) rotate(240deg) scale(1); }
+            100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1.2); }
         }
-        .animate-spin-slow { animation: spin-slow 25s linear infinite; }
+        @keyframes smoke-2 {
+            0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+            50% { transform: translate3d(10%, -5%, 0) rotate(180deg) scale(1.3); }
+            100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1); }
+        }
+        @keyframes smoke-3 {
+            0% { transform: translate3d(-5%, -5%, 0) rotate(0deg) scale(1.1); }
+            50% { transform: translate3d(5%, 5%, 0) rotate(-180deg) scale(1.4); }
+            100% { transform: translate3d(-5%, -5%, 0) rotate(-360deg) scale(1.1); }
+        }
+        
+        @keyframes smoke-color-cycle {
+            0% { filter: hue-rotate(0deg) brightness(1); }
+            50% { filter: hue-rotate(-20deg) brightness(0.9); }
+            100% { filter: hue-rotate(-40deg) brightness(0.6); }
+        }
+        .animate-smoke-1 { animation: smoke-1 20s infinite ease-in-out, smoke-color-cycle 15s infinite alternate ease-in-out; }
+        .animate-smoke-2 { animation: smoke-2 25s infinite ease-in-out, smoke-color-cycle 15s infinite alternate ease-in-out; }
+        .animate-smoke-3 { animation: smoke-3 30s infinite ease-in-out, smoke-color-cycle 15s infinite alternate ease-in-out; }
     </style>
 </head>
 <body>
@@ -522,13 +543,15 @@
             if (state === 'running') {
                 const progress = ((initialDuration - remaining) / initialDuration) * 100;
                 return (
-                    <div className="flex flex-col h-full p-4 relative overflow-hidden">
+                    <div className="flex flex-col h-full p-4 relative overflow-hidden bg-slate-950">
                         {/* Organic Progress Background */}
                         <div 
-                            className="absolute inset-0 bg-orange-600/30 transition-[clip-path] duration-1000 ease-linear"
+                            className="absolute inset-0 transition-[clip-path] duration-1000 ease-linear z-0"
                             style={{ clipPath: `circle(${progress * 1.5}% at 0 0)` }}
                         >
-                            <div className="absolute inset-[-100%] w-[300%] h-[300%] bg-gradient-to-br from-orange-500 via-red-500 to-yellow-500 animate-spin-slow opacity-70 blur-3xl"></div>
+                            <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-orange-600/40 via-red-600/40 to-transparent animate-smoke-1 blur-3xl mix-blend-screen"></div>
+                            <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-gradient-to-tl from-yellow-500/30 via-orange-500/30 to-transparent animate-smoke-2 blur-3xl mix-blend-screen"></div>
+                            <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-500/20 via-transparent to-transparent animate-smoke-3 blur-2xl mix-blend-plus-lighter"></div>
                         </div>
 
                         <div className="flex-1 flex flex-col items-center justify-center relative z-10">
@@ -692,8 +715,8 @@
                                         </div>
                                         {isReady ? (
                                             <div className="flex flex-col gap-2">
-                                                <button onClick={() => completeImpulse(imp.id, 'done')} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors">Gör</button>
-                                                <button onClick={() => completeImpulse(imp.id, 'forgotten')} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors">Glöm</button>
+                                                <button onClick={() => completeImpulse(imp, 'done')} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors">Gör</button>
+                                                <button onClick={() => completeImpulse(imp, 'forgotten')} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors">Glöm</button>
                                             </div>
                                         ) : <span className="font-mono text-yellow-500 font-bold text-sm bg-yellow-500/10 px-2 py-1 rounded">{formatCountdown(new Date(imp.unlock_time))}</span>}
                                     </div>
@@ -752,10 +775,10 @@
                                                     </div>
                                                     <div className="space-y-2">
                                                         {done.length === 0 && <p className="text-slate-500 text-sm italic text-center py-2">Inga fullföljda än.</p>}
-                                                        {done.map((l, i) => (
-                                                            <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-start gap-2 truncate">
+                                                        {done.map((l) => (
+                                                            <div key={l.id} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-start gap-2 truncate">
                                                                 <div className="truncate">
-                                                                    <p className="text-white font-medium text-sm truncate">{l.data.desc || 'Okänd impuls'}</p>
+                                                                    <p className="text-white font-medium text-sm truncate">{(l.data && l.data.desc) || l.desc || 'Okänd impuls'}</p>
                                                                     <p className="text-slate-500 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                                 <div className="text-green-500 scale-75 origin-top-right"><IconCheck /></div>
@@ -770,10 +793,10 @@
                                                     </div>
                                                     <div className="space-y-2">
                                                         {forgotten.length === 0 && <p className="text-slate-500 text-sm italic text-center py-2">Inga glömda än.</p>}
-                                                        {forgotten.map((l, i) => (
-                                                            <div key={i} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800 flex justify-between items-start gap-2 truncate">
+                                                        {forgotten.map((l) => (
+                                                            <div key={l.id} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800 flex justify-between items-start gap-2 truncate">
                                                                 <div className="truncate">
-                                                                    <p className="text-slate-400 font-medium text-sm truncate">{l.data.desc || 'Okänd impuls'}</p>
+                                                                    <p className="text-slate-400 font-medium text-sm truncate">{(l.data && l.data.desc) || l.desc || 'Okänd impuls'}</p>
                                                                     <p className="text-slate-600 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                             </div>
