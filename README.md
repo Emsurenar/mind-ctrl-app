@@ -1,1 +1,1 @@
-Produktivitetsprogram i HTML, JavaScript
+Produktivitetsprogram i HTML
