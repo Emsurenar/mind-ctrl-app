@@ -391,7 +391,6 @@
 
         // 2. Impulskontroll (Oförändrad logik, bara inlistad för kompletthet)
         const ImpulseControl = ({ logs, impulses, addImpulse, completeImpulse }) => {
-            const [impulses, setImpulses] = useState([]);
             const [newImpulse, setNewImpulse] = useState({ desc: '', estTime: '' });
             const [now, setNow] = useState(Date.now());
             const [stats, setStats] = useState({ done: 0, forgotten: 0, percentage: 0 });
@@ -487,20 +486,20 @@
                     <div className="flex-1 overflow-y-auto space-y-3 pb-20">
                         {impulses.length === 0 && <p className="text-center text-slate-500 mt-10 text-sm">Inga aktiva impulser.</p>}
                         {impulses.map(imp => {
-                            const isReady = imp.unlockTime <= now;
+                            const isReady = new Date(imp.unlock_time) <= now;
                             return (
                                 <div key={imp.id} className={`bg-slate-900/50 border rounded-2xl p-4 transition-all ${isReady ? 'border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-slate-800'}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <h3 className="font-bold text-lg text-white">{imp.desc}</h3>
-                                            <p className="text-slate-400 text-xs mt-1">Väntetid: {imp.estTime} min</p>
+                                            <p className="text-slate-400 text-xs mt-1">Väntetid: {imp.est_time} min</p>
                                         </div>
                                         {isReady ? (
                                             <div className="flex flex-col gap-2">
                                                 <button onClick={() => completeImpulse(imp.id, 'done')} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors">Gör</button>
                                                 <button onClick={() => completeImpulse(imp.id, 'forgotten')} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors">Glöm</button>
                                             </div>
-                                        ) : <span className="font-mono text-yellow-500 font-bold text-sm bg-yellow-500/10 px-2 py-1 rounded">{formatCountdown(imp.unlockTime)}</span>}
+                                        ) : <span className="font-mono text-yellow-500 font-bold text-sm bg-yellow-500/10 px-2 py-1 rounded">{formatCountdown(new Date(imp.unlock_time))}</span>}
                                     </div>
                                 </div>
                             )
@@ -558,9 +557,9 @@
                                                     <div className="space-y-2">
                                                         {done.length === 0 && <p className="text-slate-500 text-sm italic text-center py-2">Inga fullföljda än.</p>}
                                                         {done.map((l, i) => (
-                                                            <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-start gap-2">
-                                                                <div>
-                                                                    <p className="text-white font-medium text-sm">{l.desc || 'Okänd impuls'}</p>
+                                                            <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-start gap-2 truncate">
+                                                                <div className="truncate">
+                                                                    <p className="text-white font-medium text-sm truncate">{l.data.desc || 'Okänd impuls'}</p>
                                                                     <p className="text-slate-500 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                                 <div className="text-green-500 scale-75 origin-top-right"><IconCheck /></div>
@@ -576,9 +575,9 @@
                                                     <div className="space-y-2">
                                                         {forgotten.length === 0 && <p className="text-slate-500 text-sm italic text-center py-2">Inga glömda än.</p>}
                                                         {forgotten.map((l, i) => (
-                                                            <div key={i} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800 flex justify-between items-start gap-2">
-                                                                <div>
-                                                                    <p className="text-slate-400 font-medium text-sm">{l.desc || 'Okänd impuls'}</p>
+                                                            <div key={i} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800 flex justify-between items-start gap-2 truncate">
+                                                                <div className="truncate">
+                                                                    <p className="text-slate-400 font-medium text-sm truncate">{l.data.desc || 'Okänd impuls'}</p>
                                                                     <p className="text-slate-600 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                             </div>
@@ -679,7 +678,7 @@
                 graphData = new Array(24).fill(0);
                 recentActivity.forEach(l => {
                     const h = new Date(l.created_at).getHours();
-                    graphData[h] += (l.durationSeconds / 60);
+                    graphData[h] += (l.data.durationSeconds / 60);
                 });
                 graphLabels = ['00:00', '12:00', '23:59'];
             } else {
