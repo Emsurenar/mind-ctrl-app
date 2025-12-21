@@ -8,11 +8,73 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            950: 'rgb(var(--c-bg-main) / <alpha-value>)',
+                            900: 'rgb(var(--c-bg-card) / <alpha-value>)',
+                            800: 'rgb(var(--c-border) / <alpha-value>)',
+                            700: 'rgb(var(--c-input) / <alpha-value>)',
+                            400: 'rgb(var(--c-text-muted) / <alpha-value>)',
+                        },
+                        white: 'rgb(var(--c-text-main) / <alpha-value>)',
+                        blue: { 400: 'rgb(var(--c-blue) / <alpha-value>)', 600: 'rgb(var(--c-blue-600) / <alpha-value>)', 950: 'rgb(var(--c-blue-dark) / <alpha-value>)' },
+                        green: { 400: 'rgb(var(--c-green) / <alpha-value>)' },
+                        red: { 400: 'rgb(var(--c-red) / <alpha-value>)' },
+                        sky: { 950: 'rgb(var(--c-sky-dark) / <alpha-value>)' },
+                        indigo: { 950: 'rgb(var(--c-indigo-dark) / <alpha-value>)' },
+                    }
+                }
+            }
+        }
+    </script>
     
     <style>
-        body { background-color: #000000; color: #6ca1e1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        :root {
+            /* Dark Mode (Default) */
+            --c-bg-main: 2 6 23;      /* slate-950 */
+            --c-bg-card: 15 23 42;    /* slate-900 */
+            --c-border: 30 41 59;     /* slate-800 */
+            --c-input: 51 65 85;      /* slate-700 */
+            --c-text-muted: 148 163 184; /* slate-400 */
+            --c-text-main: 255 255 255;  /* white */
+            --c-blue: 96 165 250;     /* blue-400 */
+            --c-blue-600: 37 99 235;  /* blue-600 */
+            --c-green: 74 222 128;    /* green-400 */
+            --c-red: 248 113 113;     /* red-400 */
+            
+            /* Gradients bases */
+            --c-sky-dark: 8 47 73;    /* sky-950 */
+            --c-blue-dark: 23 37 84;  /* blue-950 */
+            --c-indigo-dark: 30 27 75; /* indigo-950 */
+        }
+
+        .light-mode {
+            /* Light Mode Overrides - Piggare & Estetiskt */
+            --c-bg-main: 240 249 255; /* sky-50 */
+            --c-bg-card: 255 255 255; /* white */
+            --c-border: 226 232 240;  /* slate-200 */
+            --c-input: 241 245 249;   /* slate-100 */
+            --c-text-muted: 100 116 139; /* slate-500 */
+            --c-text-main: 15 23 42;  /* slate-900 */
+            
+            --c-blue: 14 165 233;     /* sky-500 */
+            --c-blue-600: 2 132 199;  /* sky-600 */
+            --c-green: 16 185 129;    /* emerald-500 */
+            --c-red: 244 63 94;       /* rose-500 */
+
+            /* Gradients bases (Light - Mer färgstarka) */
+            --c-sky-dark: 56 189 248; /* sky-400 */
+            --c-blue-dark: 96 165 250; /* blue-400 */
+            --c-indigo-dark: 129 140 248; /* indigo-400 */
+        }
+
+        body { background-color: rgb(var(--c-bg-main)); color: rgb(var(--c-blue)); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; transition: background-color 0.3s, color 0.3s; }
         .input-field { @apply w-full bg-slate-700 border border-slate-600 rounded-lg py-4 px-8 mb-6 text-lg text-white focus:outline-none focus:border-blue-500 transition-all; }
-        .btn-primary { @apply w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95; }
+        .btn-primary { @apply w-full bg-blue-600 hover:bg-blue-700 text-slate-50 font-bold py-3 px-4 rounded-xl transition-colors active:scale-95; }
         .btn-secondary { @apply w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded transition-colors active:scale-95; }
         .card { @apply bg-slate-900 border border-slate-800 rounded-lg p-4 shadow-lg mb-4; }
         
@@ -33,6 +95,16 @@
             to { opacity: 1; transform: scale(1); }
         }
         .animate-scale-in { animation: scale-in 0.2s ease-out; }
+
+        @keyframes subtle-glow {
+            0%, 100% {
+                text-shadow: 0 0 4px rgba(var(--c-blue), 0.2), 0 0 10px rgba(var(--c-blue), 0.1);
+            }
+            50% {
+                text-shadow: 0 0 8px rgba(var(--c-blue), 0.5), 0 0 20px rgba(var(--c-blue), 0.2);
+            }
+        }
+        .animate-logo-glow { animation: subtle-glow 4s ease-in-out infinite; }
     </style>
 </head>
 <body>
@@ -55,6 +127,9 @@
         const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
         const IconChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>;
         const IconChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
+        const IconSettings = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+        const IconSun = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
+        const IconMoon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
 
         // --- AUDIO HELPER (Syntetiskt ljud, inga filer behövs) ---
         const playBeep = () => {
@@ -76,6 +151,22 @@
             } catch (e) { console.error("Audio error", e); }
         };
 
+        const sendNotification = (title, options) => {
+            if (!('Notification' in window)) {
+                console.error("This browser does not support desktop notification.");
+                return;
+            }
+            if (Notification.permission === "granted") {
+                new Notification(title, options);
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification(title, options);
+                    }
+                });
+            }
+        };
+
         const NavButton = ({ active, icon, label, onClick }) => (
             <button 
                 onClick={onClick}
@@ -90,6 +181,7 @@
         const ActivityTimer = ({ data, setData }) => {
             const [state, setState] = useState('setup'); // setup, running, alarm, review
             const [remaining, setRemaining] = useState(0);
+            const [targetTime, setTargetTime] = useState(null);
             const [initialDuration, setInitialDuration] = useState(0); // Sparar totaltiden för loggen
             const [review, setReview] = useState({ success: true, satisfaction: 50 });
             const [sessionBehaviors, setSessionBehaviors] = useState([]);
@@ -97,37 +189,42 @@
             // Timer logic
             useEffect(() => {
                 let interval;
-                if (state === 'running') {
+                if (state === 'running' && targetTime) {
                     interval = setInterval(() => {
-                        setRemaining(prev => {
-                            if (prev <= 1) {
-                                clearInterval(interval);
-                                setState('alarm');
-                                return 0;
-                            }
-                            return prev - 1;
-                        });
+                        const newRemaining = Math.max(0, Math.round((targetTime - Date.now()) / 1000));
+                        setRemaining(newRemaining);
+
+                        if (newRemaining <= 0) {
+                            clearInterval(interval);
+                            setState('alarm');
+                        }
                     }, 1000);
                 }
                 return () => clearInterval(interval);
-            }, [state]);
+            }, [state, targetTime]);
 
             // Alarm Sound Loop
             useEffect(() => {
                 let soundInterval;
                 if (state === 'alarm') {
+                    sendNotification('Tiden är ute!', { body: `Målet var: ${data.goal}` });
                     playBeep(); // Spela direkt
                     soundInterval = setInterval(playBeep, 1500); // Repetera var 1.5s
                 }
                 return () => clearInterval(soundInterval);
-            }, [state]);
+            }, [state, data.goal]);
 
             const startSession = () => {
                 const totalSeconds = parseInt(data.durationMinutes) * 60;
                 setRemaining(totalSeconds);
                 setInitialDuration(totalSeconds);
+                setTargetTime(Date.now() + totalSeconds * 1000);
                 setSessionBehaviors([]);
                 setState('running');
+
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
             };
 
             const stopAlarm = () => {
@@ -152,6 +249,13 @@
                     behaviors: sessionBehaviors
                 };
                 saveToLog(sessionLog);
+
+                if (review.success && data.originTodoId) {
+                    const storedTodos = JSON.parse(localStorage.getItem('todos') || '[]');
+                    const updatedTodos = storedTodos.filter(t => t.id !== data.originTodoId);
+                    localStorage.setItem('todos', JSON.stringify(updatedTodos));
+                }
+
                 setState('setup');
                 setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25 });
                 setSessionBehaviors([]);
@@ -284,8 +388,10 @@
             const [impulses, setImpulses] = useState([]);
             const [newImpulse, setNewImpulse] = useState({ desc: '', estTime: '' });
             const [now, setNow] = useState(Date.now());
-            const [stats, setStats] = useState({ done: 0, forgotten: 0 });
+            const [stats, setStats] = useState({ done: 0, forgotten: 0, percentage: 0 });
             const [isAdding, setIsAdding] = useState(false);
+            const [showHistory, setShowHistory] = useState(false);
+            const longPressTimer = useRef(null);
 
             useEffect(() => {
                 const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -301,12 +407,20 @@
 
             const updateStats = () => {
                 const logs = JSON.parse(localStorage.getItem('logs') || '[]');
+                const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
+                const validLogs = logs.filter(l => new Date(l.timestamp).getTime() > resetTime);
+                
                 const now = Date.now();
                 const oneDay = 24 * 60 * 60 * 1000;
-                const recent = logs.filter(l => (now - new Date(l.timestamp).getTime()) < oneDay);
+                const recent = validLogs.filter(l => (now - new Date(l.timestamp).getTime()) < oneDay);
+                
+                const allImpulses = validLogs.filter(l => l.type === 'impulse_done' || l.type === 'impulse_forgotten');
+                const percentage = allImpulses.length > 0 ? Math.round((allImpulses.filter(l => l.type === 'impulse_done').length / allImpulses.length) * 100) : 0;
+
                 setStats({
                     done: recent.filter(l => l.type === 'impulse_done').length,
-                    forgotten: recent.filter(l => l.type === 'impulse_forgotten').length
+                    forgotten: recent.filter(l => l.type === 'impulse_forgotten').length,
+                    percentage
                 });
             };
 
@@ -324,9 +438,15 @@
             };
 
             const completeImpulse = (id, action) => {
+                const impulse = impulses.find(i => i.id === id);
                 const updated = impulses.filter(i => i.id !== id);
                 setImpulses(updated);
-                saveToLog({ type: action === 'done' ? 'impulse_done' : 'impulse_forgotten', timestamp: new Date().toISOString(), impulseId: id });
+                saveToLog({ 
+                    type: action === 'done' ? 'impulse_done' : 'impulse_forgotten', 
+                    timestamp: new Date().toISOString(), 
+                    impulseId: id,
+                    desc: impulse ? impulse.desc : ''
+                });
                 updateStats();
             };
 
@@ -339,6 +459,19 @@
                 return `${h}h ${m}m ${s}s`;
             };
 
+            const handleLongPressStart = () => {
+                longPressTimer.current = setTimeout(() => {
+                    if(confirm("Vill du nollställa statistiken?")) {
+                        localStorage.setItem('impulseResetTime', Date.now().toString());
+                        updateStats();
+                    }
+                }, 800);
+            };
+
+            const handleLongPressEnd = () => {
+                if (longPressTimer.current) clearTimeout(longPressTimer.current);
+            };
+
             const isInvalid = !newImpulse.desc || !newImpulse.estTime;
 
             return (
@@ -347,14 +480,33 @@
                         <h2 className="text-3xl font-bold text-white">Impulser</h2>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
-                            <div className="text-green-400 text-xs font-bold uppercase tracking-wider mb-1">Gjorda</div>
-                            <div className="text-2xl font-bold text-white">{stats.done}</div>
+                    <div 
+                        className="mb-6 select-none active:scale-[0.99] transition-transform"
+                        onMouseDown={handleLongPressStart}
+                        onMouseUp={handleLongPressEnd}
+                        onMouseLeave={handleLongPressEnd}
+                        onTouchStart={handleLongPressStart}
+                        onTouchEnd={handleLongPressEnd}
+                    >
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
+                                <div className="text-green-400 text-xs font-bold uppercase tracking-wider mb-1">Gjorda (24h)</div>
+                                <div className="text-2xl font-bold text-white">{stats.done}</div>
+                            </div>
+                            <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
+                                <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Glömda (24h)</div>
+                                <div className="text-2xl font-bold text-white">{stats.forgotten}</div>
+                            </div>
                         </div>
-                        <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
-                            <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Glömda</div>
-                            <div className="text-2xl font-bold text-white">{stats.forgotten}</div>
+                        <div 
+                            onClick={() => setShowHistory(true)}
+                            className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl flex justify-between items-center cursor-pointer hover:bg-slate-800 transition-colors active:scale-95"
+                        >
+                            <div>
+                                <div className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">Fullföljda</div>
+                                <div className="text-xs text-slate-500">Andel av alla impulser</div>
+                            </div>
+                            <div className="text-2xl font-bold text-white">{stats.percentage}%</div>
                         </div>
                     </div>
 
@@ -401,16 +553,80 @@
                             </div>
                         </div>
                     )}
+
+                    {showHistory && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowHistory(false)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+                                <div className="p-4 border-b border-slate-800 bg-slate-900">
+                                    <h3 className="font-bold text-white text-lg">Impulshistorik</h3>
+                                </div>
+                                <div className="p-4 overflow-y-auto space-y-6">
+                                    {(() => {
+                                        const logs = JSON.parse(localStorage.getItem('logs') || '[]');
+                                        const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
+                                        const validLogs = logs.filter(l => new Date(l.timestamp).getTime() > resetTime);
+                                        const done = validLogs.filter(l => l.type === 'impulse_done').reverse();
+                                        const forgotten = validLogs.filter(l => l.type === 'impulse_forgotten').reverse();
+
+                                        return (
+                                            <>
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h4 className="text-green-400 text-xs font-bold uppercase tracking-wider">Fullföljda</h4>
+                                                        <span className="text-xs text-slate-500 font-mono">{done.length} st</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {done.length === 0 && <p className="text-slate-500 text-sm italic text-center py-2">Inga fullföljda än.</p>}
+                                                        {done.map((l, i) => (
+                                                            <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-start gap-2">
+                                                                <div>
+                                                                    <p className="text-white font-medium text-sm">{l.desc || 'Okänd impuls'}</p>
+                                                                    <p className="text-slate-500 text-[10px] mt-0.5">{new Date(l.timestamp).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                                                </div>
+                                                                <div className="text-green-500 scale-75 origin-top-right"><IconCheck /></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Ej fullföljda</h4>
+                                                        <span className="text-xs text-slate-500 font-mono">{forgotten.length} st</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {forgotten.length === 0 && <p className="text-slate-500 text-sm italic text-center py-2">Inga glömda än.</p>}
+                                                        {forgotten.map((l, i) => (
+                                                            <div key={i} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800 flex justify-between items-start gap-2">
+                                                                <div>
+                                                                    <p className="text-slate-400 font-medium text-sm">{l.desc || 'Okänd impuls'}</p>
+                                                                    <p className="text-slate-600 text-[10px] mt-0.5">{new Date(l.timestamp).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                                <div className="p-4 border-t border-slate-800 mt-auto">
+                                    <button className="btn-secondary w-full" onClick={() => setShowHistory(false)}>Stäng</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
         // 3. Dashboard (Start/Huvudfönster)
-        const Dashboard = () => {
+        const Dashboard = ({ onOpenSettings }) => {
             const [logs, setLogs] = useState([]);
             const [selectedLog, setSelectedLog] = useState(null);
             const [timeRange, setTimeRange] = useState('24h');
             const [statsView, setStatsView] = useState(null);
+            const [selectedGraphBarIndex, setSelectedGraphBarIndex] = useState(null);
+            const [habitStats, setHabitStats] = useState({ done: 0, total: 0, streak: 0, weeklyDone: 0, weeklyTotal: 0 });
 
             const getGreeting = () => {
                 const h = new Date().getHours();
@@ -429,12 +645,55 @@
             useEffect(() => {
                 const saved = localStorage.getItem('logs');
                 if(saved) setLogs(JSON.parse(saved));
+
+                // Habit Stats Calculation
+                const hData = JSON.parse(localStorage.getItem('habitsData') || '{"habits":[]}');
+                const hList = hData.habits || [];
+                const hDone = hList.filter(h => h.completed).length;
+
+                const allLogs = JSON.parse(saved || '[]');
+                const hLogs = allLogs.filter(l => l.type === 'habit_done');
+                const uniqueDays = [...new Set(hLogs.map(l => l.dateStr))].sort();
+                
+                // Weekly stats
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 6);
+                oneWeekAgo.setHours(0,0,0,0);
+                const weeklyDone = hLogs.filter(l => new Date(l.timestamp) >= oneWeekAgo).length;
+
+                // Streak Calculation (All habits must be done for a day to count)
+                let streak = 0;
+                if (hList.length > 0) {
+                    let d = new Date();
+                    d.setHours(0,0,0,0);
+                    
+                    // Check today and backwards
+                    while (true) {
+                        const ds = d.toISOString().split('T')[0];
+                        // Count unique completed habits for this date
+                        const doneCountForDay = new Set(hLogs.filter(l => l.dateStr === ds).map(l => l.habitId)).size;
+                        
+                        if (doneCountForDay >= hList.length) {
+                            streak++;
+                            d.setDate(d.getDate() - 1);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                setHabitStats({ done: hDone, total: hList.length, streak, weeklyDone, weeklyTotal: hList.length * 7 });
             }, []);
 
             const deleteLog = (timestamp) => {
                 const updated = logs.filter(l => l.timestamp !== timestamp);
                 setLogs(updated);
                 localStorage.setItem('logs', JSON.stringify(updated));
+            };
+
+            const closeStatsView = () => {
+                setStatsView(null);
+                setSelectedGraphBarIndex(null);
             };
 
             // Statistik-beräkning
@@ -446,12 +705,38 @@
             const recentTodos = logs.filter(l => l.type === 'todo_done' && (now - new Date(l.timestamp).getTime()) < timeWindow);
             const totalTodos = recentTodos.length;
             
-            const hoursDistribution = new Array(24).fill(0);
-            recentActivity.forEach(l => {
-                const h = new Date(l.timestamp).getHours();
-                hoursDistribution[h] += (l.durationSeconds / 60);
-            });
-            const maxVal = Math.max(...hoursDistribution, 1);
+            let graphData = [];
+            let graphLabels = [];
+            let days = []; // För 7d-vyn
+
+            if (timeRange === '24h') {
+                graphData = new Array(24).fill(0);
+                recentActivity.forEach(l => {
+                    const h = new Date(l.timestamp).getHours();
+                    graphData[h] += (l.durationSeconds / 60);
+                });
+                graphLabels = ['00:00', '12:00', '23:59'];
+            } else {
+                graphData = new Array(7).fill(0);
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    days.push(d);
+                }
+                
+                recentActivity.forEach(l => {
+                    const lDate = new Date(l.timestamp).toISOString().split('T')[0];
+                    const dayIndex = days.findIndex(d => d.toISOString().split('T')[0] === lDate);
+                    if (dayIndex !== -1) {
+                        graphData[dayIndex] += (l.durationSeconds / 60);
+                    }
+                });
+                
+                const options = { weekday: 'short' };
+                graphLabels = [days[0].toLocaleDateString('sv-SE', options), days[3].toLocaleDateString('sv-SE', options), days[6].toLocaleDateString('sv-SE', options)];
+            }
+            
+            const maxVal = Math.max(...graphData, 1);
 
             // Cirkeldiagram-data
             const behaviorCounts = {};
@@ -481,9 +766,14 @@
                             <h2 className="text-3xl font-bold text-white">{getGreeting()}</h2>
                             <p className="text-slate-400 text-sm capitalize">{new Date().toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                         </div>
-                        <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-                            <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
-                            <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
+                        <div className="flex items-center gap-3">
+                            <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                                <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
+                                <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
+                            </div>
+                            <button onClick={onOpenSettings} className="p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
+                                <IconSettings />
+                            </button>
                         </div>
                     </div>
 
@@ -500,15 +790,31 @@
                         </div>
                     </div>
 
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6">
+                    <div onClick={() => setStatsView('habits')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex justify-between items-center cursor-pointer hover:border-slate-700 transition-all">
+                        <div>
+                            <div className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-1">{timeRange === '24h' ? 'Vanor idag' : 'Vanor denna vecka'}</div>
+                            <div className="text-2xl font-bold text-white">
+                                {timeRange === '24h' 
+                                    ? <>{habitStats.done} <span className="text-slate-500 text-lg font-normal">/ {habitStats.total}</span></>
+                                    : <>{habitStats.weeklyDone} <span className="text-slate-500 text-lg font-normal">/ {habitStats.weeklyTotal}</span></>
+                                }
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Streak</div>
+                            <div className="text-2xl font-bold text-white flex items-center justify-end gap-1">{habitStats.streak} <span className="text-lg">🔥</span></div>
+                        </div>
+                    </div>
+
+                    <div onClick={() => setStatsView('graph_details')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 cursor-pointer hover:border-slate-700 transition-all">
                         <div className="flex items-end justify-between h-16 gap-1">
-                            {hoursDistribution.map((mins, i) => (
+                            {graphData.map((mins, i) => (
                                 <div key={i} className="flex-1 flex flex-col justify-end group relative h-full">
                                     <div className={`w-full rounded-t-sm transition-all ${mins > 0 ? 'bg-blue-500' : 'bg-slate-800'}`} style={{height: `${(mins / maxVal) * 100}%`, minHeight: '2px'}}></div>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex justify-between text-[10px] text-slate-500 mt-2 px-1 font-mono"><span>00:00</span><span>12:00</span><span>23:59</span></div>
+                        <div className="flex justify-between text-[10px] text-slate-500 mt-2 px-1 font-mono">{graphLabels.map((l, i) => <span key={i} className="capitalize">{l}</span>)}</div>
                     </div>
 
                     {totalBehaviors > 0 && (
@@ -543,45 +849,116 @@
                     </div>
 
                     {selectedLog && (
-                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
-                            <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
-                                <h3 className="text-xl font-bold mb-4 text-white">Detaljer</h3>
-                                {selectedLog.type === 'activity' ? (
-                                    <div className="space-y-3 text-left text-sm">
-                                        <p><span className="text-slate-400 block text-xs uppercase">Typ</span> Fokuspass</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Tid</span> {new Date(selectedLog.timestamp).toLocaleString()}</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Längd</span> {Math.round(selectedLog.durationSeconds / 60)} min</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Mål</span> {selectedLog.goal}</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Utmaningar</span> {selectedLog.challenges || '-'}</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Motivation</span> {selectedLog.motivation}/100</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Nöjdhet</span> {selectedLog.satisfaction}/100</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Lyckades?</span> {selectedLog.success ? 'Ja' : 'Nej'}</p>
-                                        {selectedLog.behaviors && selectedLog.behaviors.length > 0 && (
-                                            <div className="pt-2 mt-2 border-t border-slate-700">
-                                                <p><span className="text-slate-400 block text-xs uppercase mb-1">Beteenden</span></p>
-                                                <ul className="list-disc pl-4 space-y-1 text-slate-300">
-                                                    {selectedLog.behaviors.map((b, i) => <li key={i}>{b.behavior} <span className="text-slate-500 text-xs">({new Date(b.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})</span></li>)}
-                                                </ul>
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setSelectedLog(null)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                
+                                {/* Header Image/Gradient Area */}
+                                <div className={`h-24 flex items-center justify-center relative ${
+                                    selectedLog.type === 'activity' ? 'bg-gradient-to-br from-blue-600 to-blue-900' :
+                                    selectedLog.type === 'todo_done' ? 'bg-gradient-to-br from-green-600 to-green-900' :
+                                    'bg-gradient-to-br from-slate-700 to-slate-900'
+                                }`}>
+                                    <div className="text-white/20 absolute inset-0 flex items-center justify-center overflow-hidden">
+                                        <div className="scale-[3] opacity-20">
+                                            {selectedLog.type === 'activity' ? <IconTimer /> : selectedLog.type === 'todo_done' ? <IconCheck /> : <IconZap />}
+                                        </div>
+                                    </div>
+                                    <div className="z-10 flex flex-col items-center">
+                                        <div className="p-3 bg-white/10 backdrop-blur-md rounded-full mb-1 shadow-lg border border-white/20 text-white">
+                                            {selectedLog.type === 'activity' ? <IconTimer /> : selectedLog.type === 'todo_done' ? <IconCheck /> : <IconZap />}
+                                        </div>
+                                        <span className="text-white font-bold text-sm uppercase tracking-widest shadow-black/50 drop-shadow-md">
+                                            {selectedLog.type === 'activity' ? 'Fokuspass' : selectedLog.type === 'todo_done' ? 'Uppgift' : 'Händelse'}
+                                        </span>
+                                    </div>
+                                    <button onClick={() => setSelectedLog(null)} className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </div>
+
+                                {/* Content Scrollable Area */}
+                                <div className="p-6 overflow-y-auto">
+                                    <div className="text-center mb-6">
+                                        <p className="text-slate-400 text-xs font-mono mb-2">{new Date(selectedLog.timestamp).toLocaleString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+                                        <h3 className="text-xl font-bold text-white leading-tight">
+                                            {selectedLog.type === 'activity' ? selectedLog.goal : selectedLog.type === 'todo_done' ? selectedLog.desc : selectedLog.behavior || selectedLog.name}
+                                        </h3>
+                                    </div>
+
+                                    {selectedLog.type === 'activity' && (
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                    <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Längd</span>
+                                                    <span className="text-xl font-bold text-blue-400">{Math.round(selectedLog.durationSeconds / 60)} <span className="text-xs text-slate-500">min</span></span>
+                                                </div>
+                                                <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                    <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Resultat</span>
+                                                    <span className={`text-xl font-bold ${selectedLog.success ? 'text-green-400' : 'text-red-400'}`}>{selectedLog.success ? 'Lyckades' : 'Misslyckades'}</span>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                ) : selectedLog.type === 'todo_done' ? (
-                                    <div className="space-y-3 text-left text-sm">
-                                        <p><span className="text-slate-400 block text-xs uppercase">Typ</span> Uppgift klar</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Uppgift</span> {selectedLog.desc}</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Tid</span> {new Date(selectedLog.timestamp).toLocaleString()}</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Estimerad tid</span> {selectedLog.minutes} min</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 text-left text-sm">
-                                        <p><span className="text-slate-400 block text-xs uppercase">Typ</span> Beteende</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Händelse</span> {selectedLog.behavior}</p>
-                                        <p><span className="text-slate-400 block text-xs uppercase">Tid</span> {new Date(selectedLog.timestamp).toLocaleString()}</p>
-                                    </div>
-                                )}
-                                <div className="flex gap-2 mt-6">
-                                    <button className="btn-secondary" onClick={() => setSelectedLog(null)}>Stäng</button>
-                                    <button className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded transition-colors active:scale-95 flex-1" onClick={() => {
+
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Motivation</span><span className="text-white font-bold">{selectedLog.motivation}%</span></div>
+                                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full" style={{width: `${selectedLog.motivation}%`}}></div></div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Nöjdhet</span><span className="text-white font-bold">{selectedLog.satisfaction}%</span></div>
+                                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-purple-500 rounded-full" style={{width: `${selectedLog.satisfaction}%`}}></div></div>
+                                                </div>
+                                            </div>
+
+                                            {selectedLog.challenges && (
+                                                <div className="bg-red-900/10 border border-red-500/20 p-3 rounded-xl">
+                                                    <p className="text-red-400 text-xs font-bold uppercase mb-1">Utmaningar</p>
+                                                    <p className="text-slate-300 text-sm italic">"{selectedLog.challenges}"</p>
+                                                </div>
+                                            )}
+
+                                            {selectedLog.behaviors && selectedLog.behaviors.length > 0 && (
+                                                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-800">
+                                                    <p className="text-slate-400 text-xs font-bold uppercase mb-3">Loggade beteenden</p>
+                                                    <div className="space-y-3 relative before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-700">
+                                                        {selectedLog.behaviors.map((b, i) => (
+                                                            <div key={i} className="flex items-start gap-3 relative pl-1">
+                                                                <div className="w-2.5 h-2.5 rounded-full bg-slate-600 border-2 border-slate-900 mt-1 z-10 shrink-0"></div>
+                                                                <div>
+                                                                    <p className="text-slate-200 text-sm font-medium">{b.behavior}</p>
+                                                                    <p className="text-slate-500 text-xs">{new Date(b.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {selectedLog.type === 'todo_done' && (
+                                        <div className="space-y-6">
+                                            <div className="flex justify-center">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                                                    selectedLog.priority === 'high' ? 'bg-red-900/20 border-red-500/30 text-red-400' :
+                                                    selectedLog.priority === 'medium' ? 'bg-yellow-900/20 border-yellow-500/30 text-yellow-400' :
+                                                    'bg-green-900/20 border-green-500/30 text-green-400'
+                                                }`}>
+                                                    {selectedLog.priority === 'high' ? 'Hög Prioritet' : selectedLog.priority === 'medium' ? 'Medel Prioritet' : 'Låg Prioritet'}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
+                                                <span className="text-slate-400 text-sm font-medium">Estimerad tidsåtgång</span>
+                                                <span className="text-xl font-bold text-white">{selectedLog.minutes} <span className="text-xs text-slate-500 font-normal">min</span></span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer Actions */}
+                                <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-3">
+                                    <button className="flex-1 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" onClick={() => setSelectedLog(null)}>Stäng</button>
+                                    <button className="flex-1 py-3 rounded-xl font-bold text-red-400 hover:text-white hover:bg-red-600 bg-red-900/20 border border-red-900/50 hover:border-red-500 transition-all active:scale-95" onClick={() => {
                                         if(confirm("Ta bort händelse?")) {
                                             deleteLog(selectedLog.timestamp);
                                             setSelectedLog(null);
@@ -593,8 +970,8 @@
                     )}
 
                     {statsView && (
-                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setStatsView(null)}>
-                            <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={closeStatsView}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in" onClick={e => e.stopPropagation()}>
                                 {statsView === 'focus' && (() => {
                                     const numSessions = recentActivity.length;
                                     const avgLength = numSessions > 0 ? Math.round(totalMinutes / numSessions) : 0;
@@ -603,16 +980,50 @@
                                     const avgSatisfaction = numSessions > 0 ? Math.round(recentActivity.reduce((a,c) => a + c.satisfaction, 0) / numSessions) : 0;
 
                                     return (
-                                        <div>
-                                            <h3 className="text-xl font-bold mb-4 text-white">Fokusstatistik ({timeRange === '24h' ? '24h' : '7d'})</h3>
-                                            <div className="space-y-3 text-sm">
-                                                <p className="flex justify-between"><span>Antal pass:</span> <span className="font-bold">{numSessions}</span></p>
-                                                <p className="flex justify-between"><span>Total tid:</span> <span className="font-bold">{totalMinutes} min</span></p>
-                                                <p className="flex justify-between"><span>Snittlängd:</span> <span className="font-bold">{avgLength} min</span></p>
-                                                <p className="flex justify-between"><span>Lyckade pass:</span> <span className="font-bold">{successRate}%</span></p>
-                                                <p className="flex justify-between"><span>Snittmotivation:</span> <span className="font-bold">{avgMotivation}/100</span></p>
-                                                <p className="flex justify-between"><span>Snittnöjdhet:</span> <span className="font-bold">{avgSatisfaction}/100</span></p>
+                                        <div className="flex flex-col h-full">
+                                            <div className="h-24 bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center relative shrink-0">
+                                                <div className="text-white/20 absolute inset-0 flex items-center justify-center overflow-hidden">
+                                                    <div className="scale-[3] opacity-20"><IconTimer /></div>
+                                                </div>
+                                                <div className="z-10 flex flex-col items-center">
+                                                    <span className="text-white font-bold text-lg shadow-black/50 drop-shadow-md">Fokusanalys</span>
+                                                    <span className="text-blue-200 text-xs uppercase tracking-widest">{timeRange === '24h' ? 'Senaste dygnet' : 'Senaste 7 dagarna'}</span>
+                                                </div>
+                                                <button onClick={closeStatsView} className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
                                             </div>
+
+                                            <div className="p-6 overflow-y-auto space-y-6">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Total tid</span>
+                                                        <span className="text-3xl font-bold text-blue-400">{totalMinutes}<span className="text-sm text-slate-500 ml-1">min</span></span>
+                                                    </div>
+                                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Antal pass</span>
+                                                        <span className="text-3xl font-bold text-white">{numSessions}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Snittlängd</span>
+                                                        <span className="text-xl font-bold text-white">{avgLength} <span className="text-xs text-slate-500 font-normal">min</span></span>
+                                                    </div>
+                                                    <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Lyckade pass</span>
+                                                        <span className={`text-xl font-bold ${successRate >= 80 ? 'text-green-400' : successRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>{successRate}%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div><div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Snittmotivation</span><span className="text-white font-bold">{avgMotivation}%</span></div><div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full" style={{width: `${avgMotivation}%`}}></div></div></div>
+                                                    <div><div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Snittnöjdhet</span><span className="text-white font-bold">{avgSatisfaction}%</span></div><div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-purple-500 rounded-full" style={{width: `${avgSatisfaction}%`}}></div></div></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-4 border-t border-slate-800 mt-auto"><button className="btn-secondary w-full" onClick={closeStatsView}>Stäng</button></div>
                                         </div>
                                     );
                                 })()}
@@ -622,25 +1033,237 @@
                                         return acc;
                                     }, { high: 0, medium: 0, low: 0 });
                                     const total = priorityCounts.high + priorityCounts.medium + priorityCounts.low;
+                                    
+                                    const totalTime = recentTodos.reduce((acc, t) => acc + (parseInt(t.minutes) || 0), 0);
+                                    const avgTime = total > 0 ? Math.round(totalTime / total) : 0;
+
+                                    const timeOfDay = { morning: 0, afternoon: 0, evening: 0 };
+                                    recentTodos.forEach(t => {
+                                        const h = new Date(t.timestamp).getHours();
+                                        if (h >= 5 && h < 12) timeOfDay.morning++;
+                                        else if (h >= 12 && h < 18) timeOfDay.afternoon++;
+                                        else timeOfDay.evening++;
+                                    });
+                                    
+                                    const getPct = (val, tot) => tot > 0 ? Math.round((val/tot)*100) : 0;
 
                                     return (
-                                        <div>
-                                            <h3 className="text-xl font-bold mb-4 text-white">Uppgiftsstatistik ({timeRange === '24h' ? '24h' : '7d'})</h3>
-                                            <div className="space-y-4 text-sm">
-                                                <p className="flex justify-between text-lg"><span>Totalt avklarade:</span> <span className="font-bold">{totalTodos}</span></p>
-                                                <div>
-                                                    <h4 className="text-slate-400 text-xs uppercase font-bold mb-2">Prioritet</h4>
-                                                    <div className="space-y-2">
-                                                        <div className="flex items-center"><span className="w-20 text-slate-300">Hög</span><div className="flex-1 bg-slate-800 rounded-full h-4"><div className="bg-red-500 h-4 rounded-full" style={{width: `${total > 0 ? (priorityCounts.high / total) * 100 : 0}%`}}></div></div><span className="w-8 text-right font-bold">{priorityCounts.high}</span></div>
-                                                        <div className="flex items-center"><span className="w-20 text-slate-300">Medel</span><div className="flex-1 bg-slate-800 rounded-full h-4"><div className="bg-yellow-500 h-4 rounded-full" style={{width: `${total > 0 ? (priorityCounts.medium / total) * 100 : 0}%`}}></div></div><span className="w-8 text-right font-bold">{priorityCounts.medium}</span></div>
-                                                        <div className="flex items-center"><span className="w-20 text-slate-300">Låg</span><div className="flex-1 bg-slate-800 rounded-full h-4"><div className="bg-green-500 h-4 rounded-full" style={{width: `${total > 0 ? (priorityCounts.low / total) * 100 : 0}%`}}></div></div><span className="w-8 text-right font-bold">{priorityCounts.low}</span></div>
+                                        <div className="flex flex-col h-full">
+                                            <div className="h-24 bg-gradient-to-br from-green-600 to-green-900 flex items-center justify-center relative shrink-0">
+                                                <div className="text-white/20 absolute inset-0 flex items-center justify-center overflow-hidden">
+                                                    <div className="scale-[3] opacity-20"><IconCheck /></div>
+                                                </div>
+                                                <div className="z-10 flex flex-col items-center">
+                                                    <span className="text-white font-bold text-lg shadow-black/50 drop-shadow-md">Uppgiftsanalys</span>
+                                                    <span className="text-green-200 text-xs uppercase tracking-widest">{timeRange === '24h' ? 'Senaste dygnet' : 'Senaste 7 dagarna'}</span>
+                                                </div>
+                                                <button onClick={closeStatsView} className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
+                                            </div>
+
+                                            <div className="p-6 overflow-y-auto space-y-6">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Avklarade</span>
+                                                        <span className="text-3xl font-bold text-white">{total}</span>
+                                                    </div>
+                                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Total Tid</span>
+                                                        <span className="text-3xl font-bold text-green-400">{totalTime}<span className="text-sm text-slate-500 ml-1">min</span></span>
                                                     </div>
                                                 </div>
+                                                
+                                                <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+                                                    <span className="text-slate-400 text-sm font-medium">Snittid per uppgift</span>
+                                                    <span className="text-xl font-bold text-white">{avgTime} <span className="text-xs text-slate-500 font-normal">min</span></span>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider">Prioritetsfördelning</h4>
+                                                    <div className="space-y-3">
+                                                        {[
+                                                            { label: 'Hög', count: priorityCounts.high, color: 'bg-red-500', bg: 'bg-red-900/20' },
+                                                            { label: 'Medel', count: priorityCounts.medium, color: 'bg-yellow-500', bg: 'bg-yellow-900/20' },
+                                                            { label: 'Låg', count: priorityCounts.low, color: 'bg-green-500', bg: 'bg-green-900/20' }
+                                                        ].map(p => (
+                                                            <div key={p.label} className="relative">
+                                                                <div className="flex justify-between text-xs mb-1 z-10 relative">
+                                                                    <span className="text-slate-300 font-medium">{p.label}</span>
+                                                                    <span className="text-slate-400">{p.count} st ({getPct(p.count, total)}%)</span>
+                                                                </div>
+                                                                <div className={`h-2 w-full rounded-full overflow-hidden ${p.bg}`}>
+                                                                    <div className={`h-full rounded-full ${p.color}`} style={{width: `${getPct(p.count, total)}%`}}></div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider">Tid på dygnet</h4>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {[
+                                                            { label: 'Fm', count: timeOfDay.morning, icon: '🌅' },
+                                                            { label: 'Em', count: timeOfDay.afternoon, icon: '☀️' },
+                                                            { label: 'Kväll', count: timeOfDay.evening, icon: '🌙' }
+                                                        ].map(t => (
+                                                            <div key={t.label} className={`p-2 rounded-xl border text-center ${t.count > 0 ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/30 border-slate-800 opacity-50'}`}>
+                                                                <div className="text-lg mb-1">{t.icon}</div>
+                                                                <div className="text-xs text-slate-400 uppercase font-bold">{t.label}</div>
+                                                                <div className="text-lg font-bold text-white">{t.count}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-4 border-t border-slate-800 mt-auto">
+                                                <button className="btn-secondary w-full" onClick={closeStatsView}>Stäng</button>
                                             </div>
                                         </div>
                                     );
                                 })()}
-                                <button className="btn-primary mt-6" onClick={() => setStatsView(null)}>Stäng</button>
+                                {statsView === 'habits' && (() => {
+                                    const days = [];
+                                    const dataPoints = [];
+                                    for (let i = 6; i >= 0; i--) {
+                                        const d = new Date();
+                                        d.setDate(d.getDate() - i);
+                                        const dateStr = d.toISOString().split('T')[0];
+                                        days.push(d.toLocaleDateString('sv-SE', { weekday: 'short' }));
+                                        const count = logs.filter(l => l.type === 'habit_done' && l.dateStr === dateStr).length;
+                                        dataPoints.push(count);
+                                    }
+                                    
+                                    const maxVal = Math.max(...dataPoints, 1);
+                                    const points = dataPoints.map((val, i) => {
+                                        const x = (i / (dataPoints.length - 1)) * 100;
+                                        const y = 100 - ((val / maxVal) * 80);
+                                        return `${x},${y}`;
+                                    }).join(' ');
+
+                                    return (
+                                        <div className="flex flex-col h-full">
+                                            <div className="h-24 bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center relative shrink-0">
+                                                <div className="z-10 flex flex-col items-center">
+                                                    <span className="text-white font-bold text-lg shadow-black/50 drop-shadow-md">Vanoanalys</span>
+                                                    <span className="text-purple-200 text-xs uppercase tracking-widest">Senaste 7 dagarna</span>
+                                                </div>
+                                                <button onClick={closeStatsView} className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
+                                            </div>
+
+                                            <div className="p-6 overflow-y-auto space-y-6">
+                                                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                                     <h4 className="text-slate-400 text-xs uppercase font-bold mb-4 tracking-wider">Utveckling</h4>
+                                                     <div className="h-40 w-full relative px-2 border-b border-l border-slate-700/50">
+                                                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible">
+                                                            <polyline points={points} fill="none" stroke="#a855f7" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                                                        </svg>
+                                                        {dataPoints.map((val, i) => {
+                                                            const x = (i / (dataPoints.length - 1)) * 100;
+                                                            const y = 100 - ((val / maxVal) * 80);
+                                                            return (
+                                                                <div key={i} className="absolute w-2 h-2 bg-white border-2 border-purple-500 rounded-full -ml-1 -mt-1" style={{left: `${x}%`, top: `${y}%`}} title={`${val} st`}></div>
+                                                            );
+                                                        })}
+                                                        <div className="flex justify-between absolute -bottom-6 left-0 right-0 text-[10px] text-slate-400 font-mono uppercase">
+                                                            {days.map((d, i) => <span key={i}>{d}</span>)}
+                                                        </div>
+                                                     </div>
+                                                     <div className="h-4"></div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Totalt (7d)</span>
+                                                        <span className="text-3xl font-bold text-purple-400">{habitStats.weeklyDone}</span>
+                                                    </div>
+                                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Streak</span>
+                                                        <span className="text-3xl font-bold text-white">{habitStats.streak}🔥</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-4 border-t border-slate-800 mt-auto">
+                                                <button className="btn-secondary w-full" onClick={closeStatsView}>Stäng</button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                {statsView === 'graph_details' && (() => {
+                                    let selectedSessions = [];
+                                    let title = '';
+
+                                    if (selectedGraphBarIndex !== null) {
+                                        if (timeRange === '24h') {
+                                            title = `Fokuspass kl. ${selectedGraphBarIndex}:00 - ${selectedGraphBarIndex}:59`;
+                                            selectedSessions = recentActivity.filter(l => new Date(l.timestamp).getHours() === selectedGraphBarIndex);
+                                        } else { // 7d
+                                            const selectedDate = days[selectedGraphBarIndex];
+                                            const selectedDateStr = selectedDate.toISOString().split('T')[0];
+                                            title = `Fokuspass för ${selectedDate.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'short' })}`;
+                                            selectedSessions = recentActivity.filter(l => new Date(l.timestamp).toISOString().split('T')[0] === selectedDateStr);
+                                        }
+                                    }
+
+                                    return (
+                                        <div className="flex flex-col h-full">
+                                            <div className="h-24 bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center relative shrink-0">
+                                                <div className="z-10 flex flex-col items-center">
+                                                    <span className="text-white font-bold text-lg shadow-black/50 drop-shadow-md">Tidsanalys</span>
+                                                    <span className="text-blue-200 text-xs uppercase tracking-widest">{timeRange === '24h' ? 'Senaste dygnet' : 'Senaste 7 dagarna'}</span>
+                                                </div>
+                                                <button onClick={closeStatsView} className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
+                                            </div>
+
+                                            <div className="p-6 overflow-y-auto space-y-6">
+                                                {/* The graph itself */}
+                                                <div>
+                                                    <div className="flex items-end justify-between h-40 gap-1">
+                                                        {graphData.map((mins, i) => (
+                                                            <div key={i} onClick={() => setSelectedGraphBarIndex(i)} className="flex-1 flex flex-col justify-end group relative h-full cursor-pointer">
+                                                                <div className={`w-full rounded-t-sm transition-all ${mins > 0 ? 'bg-blue-500' : 'bg-slate-800'} ${selectedGraphBarIndex === i ? 'ring-2 ring-offset-2 ring-offset-slate-900 ring-blue-400' : 'hover:bg-blue-400'}`} style={{height: `${(mins / maxVal) * 100}%`, minHeight: '2px'}}></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex justify-between text-[10px] text-slate-500 mt-2 px-1 font-mono">{graphLabels.map((l, i) => <span key={i} className="capitalize">{l}</span>)}</div>
+                                                </div>
+
+                                                {/* Details for selected bar */}
+                                                {selectedGraphBarIndex !== null && (
+                                                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-800 animate-fade-in">
+                                                        <h4 className="text-slate-300 text-xs font-bold uppercase mb-3 tracking-wider">{title}</h4>
+                                                        <div className="space-y-2">
+                                                            {selectedSessions.length === 0 && <p className="text-slate-500 text-sm italic">Inga pass under denna period.</p>}
+                                                            {selectedSessions.map(l => (
+                                                                <div key={l.timestamp} className="flex justify-between items-center text-sm bg-slate-900/50 p-2 rounded-lg">
+                                                                    <span className="text-white font-medium truncate max-w-[200px]">{l.goal}</span>
+                                                                    <span className="text-slate-400 font-mono">{Math.round(l.durationSeconds / 60)} min</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {selectedGraphBarIndex === null && (
+                                                    <div className="text-center text-slate-500 text-sm pt-8">
+                                                        <p>Klicka på en stapel för att se detaljer.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-4 border-t border-slate-800 mt-auto">
+                                                <button className="btn-secondary w-full" onClick={closeStatsView}>Stäng</button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}
@@ -651,10 +1274,12 @@
         // 4. To-do List
         const TodoList = ({ onStartTodo }) => {
             const [todos, setTodos] = useState([]);
-            const [newTodo, setNewTodo] = useState({ desc: '', minutes: '', priority: 'medium' });
+            const [newTodo, setNewTodo] = useState({ desc: '', minutes: '', priority: 'medium', details: '' });
             const [isAdding, setIsAdding] = useState(false);
             const [editingTodo, setEditingTodo] = useState(null);
+            const [viewingTodo, setViewingTodo] = useState(null);
             const longPressTimer = useRef(null);
+            const isLongPress = useRef(false);
 
             useEffect(() => {
                 const saved = localStorage.getItem('todos');
@@ -672,7 +1297,8 @@
                     id: Date.now(),
                     desc: newTodo.desc,
                     minutes: parseInt(newTodo.minutes),
-                    priority: newTodo.priority
+                    priority: newTodo.priority,
+                    details: newTodo.details
                 };
 
                 const pMap = { 'high': 1, 'medium': 2, 'low': 3 };
@@ -685,7 +1311,9 @@
 
             const handleLongPressStart = (e, todo) => {
                 if (e.target.closest('button')) return; // Ignorera om man klickar på knappar
+                isLongPress.current = false;
                 longPressTimer.current = setTimeout(() => {
+                    isLongPress.current = true;
                     setEditingTodo(todo);
                 }, 500);
             };
@@ -739,7 +1367,11 @@
                                 onTouchStart={(e) => handleLongPressStart(e, t)}
                                 onTouchEnd={handleLongPressEnd}
                                 onTouchMove={handleLongPressEnd}
-                                className={`bg-slate-900/50 border-l-4 ${pColors[t.priority]} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform`}>
+                                onClick={(e) => {
+                                    if (e.target.closest('button')) return;
+                                    if (!isLongPress.current) setViewingTodo(t);
+                                }}
+                                className={`bg-slate-900/50 border-l-4 ${pColors[t.priority]} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer`}>
                                 <div>
                                     <h3 className="font-bold text-lg text-white">{t.desc}</h3>
                                     <div className="flex gap-3 text-xs text-slate-400 mt-1">
@@ -748,9 +1380,9 @@
                                     </div>
                                 </div>
                                 <div className="flex items-center">
-                                    <button onClick={() => onStartTodo(t)} className="text-slate-400 hover:text-blue-400 p-2 transition-colors" title="Starta"><IconPlay /></button>
-                                    <button onClick={() => completeTodo(t)} className="text-slate-400 hover:text-green-400 p-2 transition-colors" title="Klar"><IconCheck /></button>
-                                    <button onClick={() => deleteTodo(t.id)} className="text-slate-400 hover:text-red-400 p-2 transition-colors"><IconTrash /></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onStartTodo(t); }} className="text-slate-400 hover:text-blue-400 p-2 transition-colors" title="Starta"><IconPlay /></button>
+                                    <button onClick={(e) => { e.stopPropagation(); completeTodo(t); }} className="text-slate-400 hover:text-green-400 p-2 transition-colors" title="Klar"><IconCheck /></button>
+                                    <button onClick={(e) => { e.stopPropagation(); deleteTodo(t.id); }} className="text-slate-400 hover:text-red-400 p-2 transition-colors"><IconTrash /></button>
                                 </div>
                             </div>
                         ))}
@@ -769,6 +1401,7 @@
                                 <h3 className="text-2xl font-bold mb-6 text-white">Ny uppgift</h3>
                                 <input className="input-field text-center !py-3 !mb-3" placeholder="Aktivitet" autoFocus value={newTodo.desc} onChange={e => setNewTodo({...newTodo, desc: e.target.value})} />
                                 <input type="number" className="input-field text-center !py-3 !mb-3" placeholder="Tid (min)?" value={newTodo.minutes} onChange={e => setNewTodo({...newTodo, minutes: e.target.value})} />
+                                <textarea className="input-field text-center !py-3 !mb-3 min-h-[80px] resize-none" placeholder="Beskrivning / Anteckningar (valfritt)" value={newTodo.details || ''} onChange={e => setNewTodo({...newTodo, details: e.target.value})} />
                                 <div className="flex gap-2 justify-center mb-4 mt-2">
                                     {['high', 'medium', 'low'].map(p => (
                                         <button key={p} onClick={() => setNewTodo({...newTodo, priority: p})} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${newTodo.priority === p ? (p === 'high' ? 'bg-red-600 text-white shadow' : p === 'medium' ? 'bg-yellow-600 text-white shadow' : 'bg-green-600 text-white shadow') : 'bg-slate-800 text-slate-400'}`}>{pLabels[p]}</button>
@@ -788,6 +1421,7 @@
                                 <h3 className="text-2xl font-bold mb-6 text-white">Redigera uppgift</h3>
                                 <input className="input-field text-center !py-3 !mb-3" placeholder="Aktivitet" autoFocus value={editingTodo.desc} onChange={e => setEditingTodo({...editingTodo, desc: e.target.value})} />
                                 <input type="number" className="input-field text-center !py-3 !mb-3" placeholder="Tid (min)?" value={editingTodo.minutes} onChange={e => setEditingTodo({...editingTodo, minutes: e.target.value})} />
+                                <textarea className="input-field text-center !py-3 !mb-3 min-h-[80px] resize-none" placeholder="Beskrivning / Anteckningar" value={editingTodo.details || ''} onChange={e => setEditingTodo({...editingTodo, details: e.target.value})} />
                                 <div className="flex gap-2 justify-center mb-4 mt-2">
                                     {['high', 'medium', 'low'].map(p => (
                                         <button key={p} onClick={() => setEditingTodo({...editingTodo, priority: p})} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${editingTodo.priority === p ? (p === 'high' ? 'bg-red-600 text-white shadow' : p === 'medium' ? 'bg-yellow-600 text-white shadow' : 'bg-green-600 text-white shadow') : 'bg-slate-800 text-slate-400'}`}>{pLabels[p]}</button>
@@ -797,6 +1431,25 @@
                                     <button onClick={() => setEditingTodo(null)} className="btn-secondary">Avbryt</button>
                                     <button disabled={!editingTodo.desc || !editingTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!editingTodo.desc || !editingTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={saveTodoEdit}>Spara</button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {viewingTodo && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setViewingTodo(null)}>
+                            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <h3 className="text-2xl font-bold text-white">{viewingTodo.desc}</h3>
+                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${viewingTodo.priority === 'high' ? 'bg-red-900/30 text-red-400' : viewingTodo.priority === 'medium' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-green-900/30 text-green-400'}`}>{pLabels[viewingTodo.priority]}</span>
+                                </div>
+                                <div className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-800">
+                                    <p className="text-slate-400 text-xs font-bold uppercase mb-2">Beskrivning</p>
+                                    <p className="text-slate-200 whitespace-pre-wrap">{viewingTodo.details || <span className="italic text-slate-500">Ingen beskrivning.</span>}</p>
+                                </div>
+                                <div className="flex justify-between items-center text-sm text-slate-400 mb-6">
+                                    <span>Estimerad tid: <span className="text-white font-bold">{viewingTodo.minutes} min</span></span>
+                                </div>
+                                <button className="btn-secondary w-full" onClick={() => setViewingTodo(null)}>Stäng</button>
                             </div>
                         </div>
                     )}
@@ -1030,20 +1683,47 @@
             localStorage.setItem('logs', JSON.stringify(existing));
         };
 
+        const Settings = ({ theme, setTheme }) => {
+            return (
+                <div className="p-4 h-full flex flex-col">
+                    <div className="mb-6">
+                        <h2 className="text-3xl font-bold text-white">Inställningar</h2>
+                    </div>
+                    
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-800 rounded-lg text-blue-400">{theme === 'dark' ? <IconMoon /> : <IconSun />}</div>
+                                <span className="text-white font-bold text-lg">Utseende</span>
+                            </div>
+                            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg transition-colors border border-slate-700">
+                                {theme === 'dark' ? 'Byt till Light Mode' : 'Byt till Dark Mode'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [activeTab, setActiveTab] = useState('home');
             const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25 });
+            const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+
+            useEffect(() => {
+                document.body.className = theme === 'light' ? 'light-mode' : '';
+                localStorage.setItem('theme', theme);
+            }, [theme]);
 
             const startTodo = (todo) => {
-                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes }));
+                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id }));
                 setActiveTab('timer');
             };
 
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-950 shadow-2xl border-x border-slate-900">
-                    <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900">
-                        <h1 className="font-bold text-lg tracking-tight text-blue-400">MIND<span className="text-white">CTRL</span></h1>
-                        <div className="text-xs text-slate-500 font-mono">v1.2</div>
+                    <div className="p-4 flex items-center justify-center">
+                        <h1 className="font-bold text-lg tracking-tight text-blue-400 animate-logo-glow">M-<span className="text-white">CERE</span></h1>
                     </div>
                     <div className="flex-1 overflow-hidden relative">
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
@@ -1052,7 +1732,8 @@
                         {activeTab === 'impulse' && <ImpulseControl />}
                         {activeTab === 'todo' && <TodoList onStartTodo={startTodo} />}
                         {activeTab === 'habits' && <HabitTracker />}
-                        {activeTab === 'home' && <Dashboard />}
+                        {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} />}
+                        {activeTab === 'settings' && <Settings theme={theme} setTheme={setTheme} />}
                     </div>
                     <div className="h-16 bg-slate-900 border-t border-slate-800 flex justify-around items-center">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
