@@ -8,6 +8,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -113,6 +114,12 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // --- SUPABASE CONFIGURATION ---
+        // Byt ut dessa mot dina egna värden från Supabase Dashboard -> Project Settings -> API
+        const supabaseUrl = 'https://ifrjtdbfhhornllbprlp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlmcmp0ZGJmaGhvcm5sbGJwcmxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMzg2NzEsImV4cCI6MjA4MTkxNDY3MX0.-j0aBpoaOoGTcqGk27EWoE2pNz4uPWdHvhoKTNPscvk';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         // --- INLINE ICONS ---
         const IconTimer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
         const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
@@ -130,6 +137,7 @@
         const IconSettings = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
         const IconSun = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
         const IconMoon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
+        const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 
         // --- AUDIO HELPER (Syntetiskt ljud, inga filer behövs) ---
         const playBeep = () => {
@@ -178,7 +186,7 @@
         );
 
         // 1. Aktivitetstimer (Uppdaterad med Nedräkning & Alarm)
-        const ActivityTimer = ({ data, setData }) => {
+        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById }) => {
             const [state, setState] = useState('setup'); // setup, running, alarm, review
             const [remaining, setRemaining] = useState(0);
             const [targetTime, setTargetTime] = useState(null);
@@ -238,22 +246,20 @@
                 }
             }
 
-            const saveSession = () => {
+            const saveSession = async () => {
                 const sessionLog = {
                     type: 'activity',
-                    timestamp: new Date().toISOString(),
-                    durationSeconds: initialDuration,
-                    completed: true,
-                    ...data,
-                    ...review,
-                    behaviors: sessionBehaviors
+                    data: {
+                        durationSeconds: initialDuration,
+                        ...data,
+                        ...review,
+                        behaviors: sessionBehaviors
+                    }
                 };
-                saveToLog(sessionLog);
+                await saveLog(sessionLog);
 
                 if (review.success && data.originTodoId) {
-                    const storedTodos = JSON.parse(localStorage.getItem('todos') || '[]');
-                    const updatedTodos = storedTodos.filter(t => t.id !== data.originTodoId);
-                    localStorage.setItem('todos', JSON.stringify(updatedTodos));
+                    await deleteTodoById(data.originTodoId);
                 }
 
                 setState('setup');
@@ -384,31 +390,25 @@
         };
 
         // 2. Impulskontroll (Oförändrad logik, bara inlistad för kompletthet)
-        const ImpulseControl = () => {
+        const ImpulseControl = ({ logs, impulses, addImpulse, completeImpulse }) => {
             const [impulses, setImpulses] = useState([]);
             const [newImpulse, setNewImpulse] = useState({ desc: '', estTime: '' });
             const [now, setNow] = useState(Date.now());
             const [stats, setStats] = useState({ done: 0, forgotten: 0, percentage: 0 });
             const [isAdding, setIsAdding] = useState(false);
             const [showHistory, setShowHistory] = useState(false);
+            const [resetTrigger, setResetTrigger] = useState(0);
             const longPressTimer = useRef(null);
 
             useEffect(() => {
                 const interval = setInterval(() => setNow(Date.now()), 1000);
-                const saved = localStorage.getItem('impulses');
-                if(saved) setImpulses(JSON.parse(saved));
-                updateStats();
                 return () => clearInterval(interval);
             }, []);
 
             useEffect(() => {
-                localStorage.setItem('impulses', JSON.stringify(impulses));
-            }, [impulses]);
-
-            const updateStats = () => {
-                const logs = JSON.parse(localStorage.getItem('logs') || '[]');
+                // This effect now depends on the logs prop from App
                 const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
-                const validLogs = logs.filter(l => new Date(l.timestamp).getTime() > resetTime);
+                const validLogs = logs.filter(l => new Date(l.created_at).getTime() > resetTime);
                 
                 const now = Date.now();
                 const oneDay = 24 * 60 * 60 * 1000;
@@ -422,33 +422,7 @@
                     forgotten: recent.filter(l => l.type === 'impulse_forgotten').length,
                     percentage
                 });
-            };
-
-            const addImpulse = () => {
-                if(!newImpulse.desc || !newImpulse.estTime) return;
-                const estMinutes = parseInt(newImpulse.estTime);
-                let waitMinutes = 0;
-                if (estMinutes < 20) waitMinutes = 30; 
-                else waitMinutes = estMinutes * 3;
-
-                const unlockTime = Date.now() + (waitMinutes * 60 * 1000);
-                setImpulses([{id: Date.now(), desc: newImpulse.desc, estTime: estMinutes, unlockTime}, ...impulses]);
-                setNewImpulse({ desc: '', estTime: '' });
-                setIsAdding(false);
-            };
-
-            const completeImpulse = (id, action) => {
-                const impulse = impulses.find(i => i.id === id);
-                const updated = impulses.filter(i => i.id !== id);
-                setImpulses(updated);
-                saveToLog({ 
-                    type: action === 'done' ? 'impulse_done' : 'impulse_forgotten', 
-                    timestamp: new Date().toISOString(), 
-                    impulseId: id,
-                    desc: impulse ? impulse.desc : ''
-                });
-                updateStats();
-            };
+            }, [logs, resetTrigger]);
 
             const formatCountdown = (unlockTime) => {
                 const diff = unlockTime - now;
@@ -463,7 +437,7 @@
                 longPressTimer.current = setTimeout(() => {
                     if(confirm("Vill du nollställa statistiken?")) {
                         localStorage.setItem('impulseResetTime', Date.now().toString());
-                        updateStats();
+                        setResetTrigger(prev => prev + 1);
                     }
                 }, 800);
             };
@@ -548,7 +522,14 @@
                                 <input type="number" className="input-field text-center !py-3 !mb-3" placeholder="Tid (min)?" value={newImpulse.estTime} onChange={e => setNewImpulse({...newImpulse, estTime: e.target.value})} />
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
-                                    <button disabled={isInvalid} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${isInvalid ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={addImpulse}>Lås in</button>
+                                    <button disabled={isInvalid} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${isInvalid ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={() => {
+                                        addImpulse(newImpulse).then(() => {
+                                            setNewImpulse({ desc: '', estTime: '' });
+                                            setIsAdding(false);
+                                        });
+                                    }}>
+                                        Lås in
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -562,7 +543,6 @@
                                 </div>
                                 <div className="p-4 overflow-y-auto space-y-6">
                                     {(() => {
-                                        const logs = JSON.parse(localStorage.getItem('logs') || '[]');
                                         const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
                                         const validLogs = logs.filter(l => new Date(l.timestamp).getTime() > resetTime);
                                         const done = validLogs.filter(l => l.type === 'impulse_done').reverse();
@@ -620,13 +600,12 @@
         };
 
         // 3. Dashboard (Start/Huvudfönster)
-        const Dashboard = ({ onOpenSettings }) => {
-            const [logs, setLogs] = useState([]);
+        const Dashboard = ({ onOpenSettings, logs, habits, deleteLog }) => {
             const [selectedLog, setSelectedLog] = useState(null);
             const [timeRange, setTimeRange] = useState('24h');
             const [statsView, setStatsView] = useState(null);
             const [selectedGraphBarIndex, setSelectedGraphBarIndex] = useState(null);
-            const [habitStats, setHabitStats] = useState({ done: 0, total: 0, streak: 0, weeklyDone: 0, weeklyTotal: 0 });
+            const [habitStats, setHabitStats] = useState({ doneToday: 0, totalActive: 0, streak: 0, weeklyDone: 0, weeklyTotal: 0 });
 
             const getGreeting = () => {
                 const h = new Date().getHours();
@@ -643,27 +622,20 @@
             };
 
             useEffect(() => {
-                const saved = localStorage.getItem('logs');
-                if(saved) setLogs(JSON.parse(saved));
-
                 // Habit Stats Calculation
-                const hData = JSON.parse(localStorage.getItem('habitsData') || '{"habits":[]}');
-                const hList = hData.habits || [];
-                const hDone = hList.filter(h => h.completed).length;
-
-                const allLogs = JSON.parse(saved || '[]');
-                const hLogs = allLogs.filter(l => l.type === 'habit_done');
-                const uniqueDays = [...new Set(hLogs.map(l => l.dateStr))].sort();
+                const todayStr = new Date().toISOString().split('T')[0];
+                const habitLogs = logs.filter(l => l.type === 'habit_done');
+                const doneToday = new Set(habitLogs.filter(l => l.created_at.startsWith(todayStr)).map(l => l.data.habitId)).size;
                 
                 // Weekly stats
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 6);
                 oneWeekAgo.setHours(0,0,0,0);
-                const weeklyDone = hLogs.filter(l => new Date(l.timestamp) >= oneWeekAgo).length;
+                const weeklyDone = habitLogs.filter(l => new Date(l.created_at) >= oneWeekAgo).length;
 
                 // Streak Calculation (All habits must be done for a day to count)
                 let streak = 0;
-                if (hList.length > 0) {
+                if (habits.length > 0) {
                     let d = new Date();
                     d.setHours(0,0,0,0);
                     
@@ -671,9 +643,9 @@
                     while (true) {
                         const ds = d.toISOString().split('T')[0];
                         // Count unique completed habits for this date
-                        const doneCountForDay = new Set(hLogs.filter(l => l.dateStr === ds).map(l => l.habitId)).size;
+                        const doneCountForDay = new Set(habitLogs.filter(l => l.created_at.startsWith(ds)).map(l => l.data.habitId)).size;
                         
-                        if (doneCountForDay >= hList.length) {
+                        if (doneCountForDay >= habits.length) {
                             streak++;
                             d.setDate(d.getDate() - 1);
                         } else {
@@ -682,14 +654,8 @@
                     }
                 }
 
-                setHabitStats({ done: hDone, total: hList.length, streak, weeklyDone, weeklyTotal: hList.length * 7 });
-            }, []);
-
-            const deleteLog = (timestamp) => {
-                const updated = logs.filter(l => l.timestamp !== timestamp);
-                setLogs(updated);
-                localStorage.setItem('logs', JSON.stringify(updated));
-            };
+                setHabitStats({ doneToday: doneToday, totalActive: habits.length, streak, weeklyDone, weeklyTotal: habits.length * 7 });
+            }, [logs, habits]);
 
             const closeStatsView = () => {
                 setStatsView(null);
@@ -699,10 +665,10 @@
             // Statistik-beräkning
             const now = new Date();
             const timeWindow = timeRange === '24h' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
-            const recentActivity = logs.filter(l => l.type === 'activity' && (now - new Date(l.timestamp).getTime()) < timeWindow);
-            const totalMinutes = Math.round(recentActivity.reduce((acc, curr) => acc + (curr.durationSeconds / 60), 0));
+            const recentActivity = logs.filter(l => l.type === 'activity' && (now - new Date(l.created_at).getTime()) < timeWindow);
+            const totalMinutes = Math.round(recentActivity.reduce((acc, curr) => acc + (curr.data.durationSeconds / 60), 0));
             
-            const recentTodos = logs.filter(l => l.type === 'todo_done' && (now - new Date(l.timestamp).getTime()) < timeWindow);
+            const recentTodos = logs.filter(l => l.type === 'todo_done' && (now - new Date(l.created_at).getTime()) < timeWindow);
             const totalTodos = recentTodos.length;
             
             let graphData = [];
@@ -712,7 +678,7 @@
             if (timeRange === '24h') {
                 graphData = new Array(24).fill(0);
                 recentActivity.forEach(l => {
-                    const h = new Date(l.timestamp).getHours();
+                    const h = new Date(l.created_at).getHours();
                     graphData[h] += (l.durationSeconds / 60);
                 });
                 graphLabels = ['00:00', '12:00', '23:59'];
@@ -725,10 +691,10 @@
                 }
                 
                 recentActivity.forEach(l => {
-                    const lDate = new Date(l.timestamp).toISOString().split('T')[0];
+                    const lDate = new Date(l.created_at).toISOString().split('T')[0];
                     const dayIndex = days.findIndex(d => d.toISOString().split('T')[0] === lDate);
                     if (dayIndex !== -1) {
-                        graphData[dayIndex] += (l.durationSeconds / 60);
+                        graphData[dayIndex] += (l.data.durationSeconds / 60);
                     }
                 });
                 
@@ -741,8 +707,8 @@
             // Cirkeldiagram-data
             const behaviorCounts = {};
             recentActivity.forEach(l => {
-                if (l.behaviors) {
-                    l.behaviors.forEach(b => {
+                if (l.data.behaviors) {
+                    l.data.behaviors.forEach(b => {
                         behaviorCounts[b.behavior] = (behaviorCounts[b.behavior] || 0) + 1;
                     });
                 }
@@ -795,7 +761,7 @@
                             <div className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-1">{timeRange === '24h' ? 'Vanor idag' : 'Vanor denna vecka'}</div>
                             <div className="text-2xl font-bold text-white">
                                 {timeRange === '24h' 
-                                    ? <>{habitStats.done} <span className="text-slate-500 text-lg font-normal">/ {habitStats.total}</span></>
+                                    ? <>{habitStats.doneToday} <span className="text-slate-500 text-lg font-normal">/ {habitStats.totalActive}</span></>
                                     : <>{habitStats.weeklyDone} <span className="text-slate-500 text-lg font-normal">/ {habitStats.weeklyTotal}</span></>
                                 }
                             </div>
@@ -835,11 +801,11 @@
                         <h3 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider text-left">Senaste händelser</h3>
                         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                             {logs.slice().reverse().filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 20).map((l) => (
-                                <div key={l.timestamp} onClick={() => setSelectedLog(l)} className="group flex items-center justify-between text-sm bg-slate-900/50 border border-slate-800 p-3 rounded-xl cursor-pointer hover:bg-slate-800 transition-colors">
+                                <div key={l.id} onClick={() => setSelectedLog(l)} className="group flex items-center justify-between text-sm bg-slate-900/50 border border-slate-800 p-3 rounded-xl cursor-pointer hover:bg-slate-800 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2 h-2 rounded-full ${l.type === 'activity' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
                                         <span className="text-white font-medium truncate max-w-[150px]">
-                                            {l.type === 'activity' ? l.goal : l.desc}
+                                            {l.data.goal || l.data.desc}
                                         </span>
                                     </div>
                                     <span className="text-slate-500 text-xs">{new Date(l.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
@@ -879,9 +845,9 @@
                                 {/* Content Scrollable Area */}
                                 <div className="p-6 overflow-y-auto">
                                     <div className="text-center mb-6">
-                                        <p className="text-slate-400 text-xs font-mono mb-2">{new Date(selectedLog.timestamp).toLocaleString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="text-slate-400 text-xs font-mono mb-2">{new Date(selectedLog.created_at).toLocaleString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
                                         <h3 className="text-xl font-bold text-white leading-tight">
-                                            {selectedLog.type === 'activity' ? selectedLog.goal : selectedLog.type === 'todo_done' ? selectedLog.desc : selectedLog.behavior || selectedLog.name}
+                                            {selectedLog.data.goal || selectedLog.data.desc || selectedLog.data.behavior || selectedLog.data.name}
                                         </h3>
                                     </div>
 
@@ -890,42 +856,42 @@
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
                                                     <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Längd</span>
-                                                    <span className="text-xl font-bold text-blue-400">{Math.round(selectedLog.durationSeconds / 60)} <span className="text-xs text-slate-500">min</span></span>
+                                                    <span className="text-xl font-bold text-blue-400">{Math.round(selectedLog.data.durationSeconds / 60)} <span className="text-xs text-slate-500">min</span></span>
                                                 </div>
                                                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center">
                                                     <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">Resultat</span>
-                                                    <span className={`text-xl font-bold ${selectedLog.success ? 'text-green-400' : 'text-red-400'}`}>{selectedLog.success ? 'Lyckades' : 'Misslyckades'}</span>
+                                                    <span className={`text-xl font-bold ${selectedLog.data.success ? 'text-green-400' : 'text-red-400'}`}>{selectedLog.data.success ? 'Lyckades' : 'Misslyckades'}</span>
                                                 </div>
                                             </div>
 
                                             <div className="space-y-3">
                                                 <div>
-                                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Motivation</span><span className="text-white font-bold">{selectedLog.motivation}%</span></div>
-                                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full" style={{width: `${selectedLog.motivation}%`}}></div></div>
+                                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Motivation</span><span className="text-white font-bold">{selectedLog.data.motivation}%</span></div>
+                                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full" style={{width: `${selectedLog.data.motivation}%`}}></div></div>
                                                 </div>
                                                 <div>
-                                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Nöjdhet</span><span className="text-white font-bold">{selectedLog.satisfaction}%</span></div>
-                                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-purple-500 rounded-full" style={{width: `${selectedLog.satisfaction}%`}}></div></div>
+                                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Nöjdhet</span><span className="text-white font-bold">{selectedLog.data.satisfaction}%</span></div>
+                                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-purple-500 rounded-full" style={{width: `${selectedLog.data.satisfaction}%`}}></div></div>
                                                 </div>
                                             </div>
 
-                                            {selectedLog.challenges && (
+                                            {selectedLog.data.challenges && (
                                                 <div className="bg-red-900/10 border border-red-500/20 p-3 rounded-xl">
                                                     <p className="text-red-400 text-xs font-bold uppercase mb-1">Utmaningar</p>
-                                                    <p className="text-slate-300 text-sm italic">"{selectedLog.challenges}"</p>
+                                                    <p className="text-slate-300 text-sm italic">"{selectedLog.data.challenges}"</p>
                                                 </div>
                                             )}
 
-                                            {selectedLog.behaviors && selectedLog.behaviors.length > 0 && (
+                                            {selectedLog.data.behaviors && selectedLog.data.behaviors.length > 0 && (
                                                 <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-800">
                                                     <p className="text-slate-400 text-xs font-bold uppercase mb-3">Loggade beteenden</p>
                                                     <div className="space-y-3 relative before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-700">
-                                                        {selectedLog.behaviors.map((b, i) => (
+                                                        {selectedLog.data.behaviors.map((b, i) => (
                                                             <div key={i} className="flex items-start gap-3 relative pl-1">
                                                                 <div className="w-2.5 h-2.5 rounded-full bg-slate-600 border-2 border-slate-900 mt-1 z-10 shrink-0"></div>
                                                                 <div>
                                                                     <p className="text-slate-200 text-sm font-medium">{b.behavior}</p>
-                                                                    <p className="text-slate-500 text-xs">{new Date(b.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                                    <p className="text-slate-500 text-xs">{new Date(b.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -939,17 +905,17 @@
                                         <div className="space-y-6">
                                             <div className="flex justify-center">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                                                    selectedLog.priority === 'high' ? 'bg-red-900/20 border-red-500/30 text-red-400' :
-                                                    selectedLog.priority === 'medium' ? 'bg-yellow-900/20 border-yellow-500/30 text-yellow-400' :
+                                                    selectedLog.data.priority === 'high' ? 'bg-red-900/20 border-red-500/30 text-red-400' :
+                                                    selectedLog.data.priority === 'medium' ? 'bg-yellow-900/20 border-yellow-500/30 text-yellow-400' :
                                                     'bg-green-900/20 border-green-500/30 text-green-400'
                                                 }`}>
-                                                    {selectedLog.priority === 'high' ? 'Hög Prioritet' : selectedLog.priority === 'medium' ? 'Medel Prioritet' : 'Låg Prioritet'}
+                                                    {selectedLog.data.priority === 'high' ? 'Hög Prioritet' : selectedLog.data.priority === 'medium' ? 'Medel Prioritet' : 'Låg Prioritet'}
                                                 </span>
                                             </div>
                                             
                                             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
                                                 <span className="text-slate-400 text-sm font-medium">Estimerad tidsåtgång</span>
-                                                <span className="text-xl font-bold text-white">{selectedLog.minutes} <span className="text-xs text-slate-500 font-normal">min</span></span>
+                                                <span className="text-xl font-bold text-white">{selectedLog.data.minutes} <span className="text-xs text-slate-500 font-normal">min</span></span>
                                             </div>
                                         </div>
                                     )}
@@ -958,9 +924,9 @@
                                 {/* Footer Actions */}
                                 <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-3">
                                     <button className="flex-1 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" onClick={() => setSelectedLog(null)}>Stäng</button>
-                                    <button className="flex-1 py-3 rounded-xl font-bold text-red-400 hover:text-white hover:bg-red-600 bg-red-900/20 border border-red-900/50 hover:border-red-500 transition-all active:scale-95" onClick={() => {
+                                    <button className="flex-1 py-3 rounded-xl font-bold text-red-400 hover:text-white hover:bg-red-600 bg-red-900/20 border border-red-900/50 hover:border-red-500 transition-all active:scale-95" onClick={async () => {
                                         if(confirm("Ta bort händelse?")) {
-                                            deleteLog(selectedLog.timestamp);
+                                            await deleteLog(selectedLog.id);
                                             setSelectedLog(null);
                                         }
                                     }}>Ta bort</button>
@@ -975,9 +941,9 @@
                                 {statsView === 'focus' && (() => {
                                     const numSessions = recentActivity.length;
                                     const avgLength = numSessions > 0 ? Math.round(totalMinutes / numSessions) : 0;
-                                    const successRate = numSessions > 0 ? Math.round(recentActivity.filter(s => s.success).length / numSessions * 100) : 0;
-                                    const avgMotivation = numSessions > 0 ? Math.round(recentActivity.reduce((a,c) => a + c.motivation, 0) / numSessions) : 0;
-                                    const avgSatisfaction = numSessions > 0 ? Math.round(recentActivity.reduce((a,c) => a + c.satisfaction, 0) / numSessions) : 0;
+                                    const successRate = numSessions > 0 ? Math.round(recentActivity.filter(s => s.data.success).length / numSessions * 100) : 0;
+                                    const avgMotivation = numSessions > 0 ? Math.round(recentActivity.reduce((a,c) => a + c.data.motivation, 0) / numSessions) : 0;
+                                    const avgSatisfaction = numSessions > 0 ? Math.round(recentActivity.reduce((a,c) => a + c.data.satisfaction, 0) / numSessions) : 0;
 
                                     return (
                                         <div className="flex flex-col h-full">
@@ -1029,12 +995,12 @@
                                 })()}
                                 {statsView === 'todo' && (() => {
                                     const priorityCounts = recentTodos.reduce((acc, todo) => {
-                                        acc[todo.priority] = (acc[todo.priority] || 0) + 1;
+                                        acc[todo.data.priority] = (acc[todo.data.priority] || 0) + 1;
                                         return acc;
                                     }, { high: 0, medium: 0, low: 0 });
                                     const total = priorityCounts.high + priorityCounts.medium + priorityCounts.low;
                                     
-                                    const totalTime = recentTodos.reduce((acc, t) => acc + (parseInt(t.minutes) || 0), 0);
+                                    const totalTime = recentTodos.reduce((acc, t) => acc + (parseInt(t.data.minutes) || 0), 0);
                                     const avgTime = total > 0 ? Math.round(totalTime / total) : 0;
 
                                     const timeOfDay = { morning: 0, afternoon: 0, evening: 0 };
@@ -1132,7 +1098,7 @@
                                         d.setDate(d.getDate() - i);
                                         const dateStr = d.toISOString().split('T')[0];
                                         days.push(d.toLocaleDateString('sv-SE', { weekday: 'short' }));
-                                        const count = logs.filter(l => l.type === 'habit_done' && l.dateStr === dateStr).length;
+                                        const count = logs.filter(l => l.type === 'habit_done' && l.created_at.startsWith(dateStr)).length;
                                         dataPoints.push(count);
                                     }
                                     
@@ -1201,12 +1167,12 @@
                                     if (selectedGraphBarIndex !== null) {
                                         if (timeRange === '24h') {
                                             title = `Fokuspass kl. ${selectedGraphBarIndex}:00 - ${selectedGraphBarIndex}:59`;
-                                            selectedSessions = recentActivity.filter(l => new Date(l.timestamp).getHours() === selectedGraphBarIndex);
+                                            selectedSessions = recentActivity.filter(l => new Date(l.created_at).getHours() === selectedGraphBarIndex);
                                         } else { // 7d
                                             const selectedDate = days[selectedGraphBarIndex];
                                             const selectedDateStr = selectedDate.toISOString().split('T')[0];
                                             title = `Fokuspass för ${selectedDate.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'short' })}`;
-                                            selectedSessions = recentActivity.filter(l => new Date(l.timestamp).toISOString().split('T')[0] === selectedDateStr);
+                                            selectedSessions = recentActivity.filter(l => new Date(l.created_at).toISOString().split('T')[0] === selectedDateStr);
                                         }
                                     }
 
@@ -1242,9 +1208,9 @@
                                                         <div className="space-y-2">
                                                             {selectedSessions.length === 0 && <p className="text-slate-500 text-sm italic">Inga pass under denna period.</p>}
                                                             {selectedSessions.map(l => (
-                                                                <div key={l.timestamp} className="flex justify-between items-center text-sm bg-slate-900/50 p-2 rounded-lg">
-                                                                    <span className="text-white font-medium truncate max-w-[200px]">{l.goal}</span>
-                                                                    <span className="text-slate-400 font-mono">{Math.round(l.durationSeconds / 60)} min</span>
+                                                                <div key={l.id} className="flex justify-between items-center text-sm bg-slate-900/50 p-2 rounded-lg">
+                                                                    <span className="text-white font-medium truncate max-w-[200px]">{l.data.goal}</span>
+                                                                    <span className="text-slate-400 font-mono">{Math.round(l.data.durationSeconds / 60)} min</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1272,42 +1238,13 @@
         };
 
         // 4. To-do List
-        const TodoList = ({ onStartTodo }) => {
-            const [todos, setTodos] = useState([]);
+        const TodoList = ({ todos, onStartTodo, addTodo, completeTodo, deleteTodo, saveTodoEdit }) => {
             const [newTodo, setNewTodo] = useState({ desc: '', minutes: '', priority: 'medium', details: '' });
             const [isAdding, setIsAdding] = useState(false);
             const [editingTodo, setEditingTodo] = useState(null);
             const [viewingTodo, setViewingTodo] = useState(null);
             const longPressTimer = useRef(null);
             const isLongPress = useRef(false);
-
-            useEffect(() => {
-                const saved = localStorage.getItem('todos');
-                if(saved) setTodos(JSON.parse(saved));
-            }, []);
-
-            useEffect(() => {
-                localStorage.setItem('todos', JSON.stringify(todos));
-            }, [todos]);
-
-            const addTodo = () => {
-                if (!newTodo.desc || !newTodo.minutes) return;
-                
-                const newItem = {
-                    id: Date.now(),
-                    desc: newTodo.desc,
-                    minutes: parseInt(newTodo.minutes),
-                    priority: newTodo.priority,
-                    details: newTodo.details
-                };
-
-                const pMap = { 'high': 1, 'medium': 2, 'low': 3 };
-                const updated = [...todos, newItem].sort((a, b) => pMap[a.priority] - pMap[b.priority]);
-
-                setTodos(updated);
-                setNewTodo({ desc: '', minutes: '', priority: 'medium' });
-                setIsAdding(false);
-            };
 
             const handleLongPressStart = (e, todo) => {
                 if (e.target.closest('button')) return; // Ignorera om man klickar på knappar
@@ -1322,31 +1259,6 @@
                 if (longPressTimer.current) clearTimeout(longPressTimer.current);
             };
 
-            const saveTodoEdit = () => {
-                if (!editingTodo.desc || !editingTodo.minutes) return;
-                const pMap = { 'high': 1, 'medium': 2, 'low': 3 };
-                const updated = todos.map(t => t.id === editingTodo.id ? editingTodo : t).sort((a, b) => pMap[a.priority] - pMap[b.priority]);
-                setTodos(updated);
-                setEditingTodo(null);
-            };
-
-            const completeTodo = (todo) => {
-                const updated = todos.filter(t => t.id !== todo.id);
-                setTodos(updated);
-                saveToLog({
-                    type: 'todo_done',
-                    desc: todo.desc,
-                    minutes: todo.minutes,
-                    priority: todo.priority,
-                    timestamp: new Date().toISOString()
-                });
-            };
-
-            const deleteTodo = (id) => {
-                const updated = todos.filter(t => t.id !== id);
-                setTodos(updated);
-            };
-
             const pColors = { high: 'border-l-red-500 bg-red-900/10', medium: 'border-l-yellow-500 bg-yellow-900/10', low: 'border-l-green-500 bg-green-900/10' };
             const pLabels = { high: 'Hög', medium: 'Medel', low: 'Låg' };
 
@@ -1358,7 +1270,7 @@
 
                     <div className="flex-1 overflow-y-auto space-y-3 pb-20">
                         {todos.length === 0 && <p className="text-center text-slate-500 mt-10 text-sm">Inget att göra.</p>}
-                        {todos.map(t => (
+                        {[...todos].sort((a, b) => ({ 'high': 1, 'medium': 2, 'low': 3 }[a.priority] - { 'high': 1, 'medium': 2, 'low': 3 }[b.priority])).map(t => (
                             <div 
                                 key={t.id} 
                                 onMouseDown={(e) => handleLongPressStart(e, t)}
@@ -1409,7 +1321,11 @@
                                 </div>
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
-                                    <button disabled={!newTodo.desc || !newTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!newTodo.desc || !newTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={addTodo}>Skapa</button>
+                                    <button disabled={!newTodo.desc || !newTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!newTodo.desc || !newTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={async () => {
+                                        await addTodo(newTodo);
+                                        setNewTodo({ desc: '', minutes: '', priority: 'medium', details: '' });
+                                        setIsAdding(false);
+                                    }}>Skapa</button>
                                 </div>
                             </div>
                         </div>
@@ -1429,7 +1345,10 @@
                                 </div>
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setEditingTodo(null)} className="btn-secondary">Avbryt</button>
-                                    <button disabled={!editingTodo.desc || !editingTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!editingTodo.desc || !editingTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={saveTodoEdit}>Spara</button>
+                                    <button disabled={!editingTodo.desc || !editingTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!editingTodo.desc || !editingTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={async () => {
+                                        await saveTodoEdit(editingTodo);
+                                        setEditingTodo(null);
+                                    }}>Spara</button>
                                 </div>
                             </div>
                         </div>
@@ -1458,8 +1377,7 @@
         };
 
         // 5. Habit Tracker
-        const HabitTracker = () => {
-            const [habits, setHabits] = useState([]);
+        const HabitTracker = ({ habits, logs, addHabit, toggleHabit, saveHabitEdit, deleteHabit }) => {
             const [newHabit, setNewHabit] = useState('');
             const [isAdding, setIsAdding] = useState(false);
             const [editingHabit, setEditingHabit] = useState(null);
@@ -1467,41 +1385,6 @@
             const isLongPress = useRef(false);
             const [view, setView] = useState('list');
             const [calendarDate, setCalendarDate] = useState(new Date());
-
-            const getTodayString = () => new Date().toISOString().split('T')[0];
-
-            // Load and reset logic
-            useEffect(() => {
-                const savedData = localStorage.getItem('habitsData');
-                let data = { habits: [], lastReset: getTodayString() };
-
-                if (savedData) {
-                    data = JSON.parse(savedData);
-                }
-
-                const today = getTodayString();
-                if (data.lastReset !== today) {
-                    data.habits = data.habits.map(h => ({ ...h, completed: false }));
-                    data.lastReset = today;
-                    localStorage.setItem('habitsData', JSON.stringify(data));
-                }
-                
-                setHabits(data.habits);
-            }, []);
-
-            const saveData = (updatedHabits) => {
-                const today = getTodayString();
-                localStorage.setItem('habitsData', JSON.stringify({ habits: updatedHabits, lastReset: today }));
-                setHabits(updatedHabits);
-            };
-
-            const addHabit = () => {
-                if (!newHabit.trim()) return;
-                const updatedHabits = [...habits, { id: Date.now(), name: newHabit, completed: false }];
-                saveData(updatedHabits);
-                setNewHabit('');
-                setIsAdding(false);
-            };
 
             const handleLongPressStart = (habit) => {
                 isLongPress.current = false;
@@ -1520,41 +1403,21 @@
                 toggleHabit(habitId);
             };
 
-            const saveHabitEdit = () => {
-                if (!editingHabit.name) return;
-                const updatedHabits = habits.map(h => h.id === editingHabit.id ? editingHabit : h);
-                saveData(updatedHabits);
-                setEditingHabit(null);
-            };
+            const getTodayString = () => new Date().toISOString().split('T')[0];
 
-            const deleteHabit = () => {
-                if(confirm("Vill du ta bort denna vana?")) {
-                    const updatedHabits = habits.filter(h => h.id !== editingHabit.id);
-                    saveData(updatedHabits);
-                    setEditingHabit(null);
-                }
-            };
+            const todayStr = getTodayString();
+            const completedTodayIds = new Set(
+                logs
+                    .filter(l => l.type === 'habit_done' && l.created_at.startsWith(todayStr))
+                    .map(l => l.data.habitId)
+            );
 
-            const toggleHabit = (id) => {
-                const updatedHabits = habits.map(h =>
-                    h.id === id ? { ...h, completed: !h.completed } : h
-                );
-                saveData(updatedHabits);
+            const habitsWithStatus = habits.map(h => ({
+                ...h,
+                completed: completedTodayIds.has(h.id)
+            }));
 
-                // Log history
-                const logs = JSON.parse(localStorage.getItem('logs') || '[]');
-                const today = getTodayString();
-                const habit = habits.find(h => h.id === id);
-                if (!habit.completed) { // Was not completed, now is
-                    logs.push({ type: 'habit_done', habitId: id, name: habit.name, timestamp: new Date().toISOString(), dateStr: today });
-                } else {
-                    const idx = logs.findIndex(l => l.type === 'habit_done' && l.habitId === id && l.dateStr === today);
-                    if (idx > -1) logs.splice(idx, 1);
-                }
-                localStorage.setItem('logs', JSON.stringify(logs));
-            };
-
-            const sortedHabits = [...habits].sort((a, b) => a.completed - b.completed);
+            const sortedHabits = [...habitsWithStatus].sort((a, b) => a.completed - b.completed);
 
             return (
                 <div className="p-4 h-full flex flex-col relative">
@@ -1602,13 +1465,12 @@
                                     const month = calendarDate.getMonth();
                                     const daysInMonth = new Date(year, month + 1, 0).getDate();
                                     const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
-                                    const logs = JSON.parse(localStorage.getItem('logs') || '[]');
                                     
                                     const cells = [];
                                     for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`}></div>);
                                     for (let i = 1; i <= daysInMonth; i++) {
-                                        const dateStr = new Date(Date.UTC(year, month, i)).toISOString().split('T')[0];
-                                        const doneCount = logs.filter(l => l.type === 'habit_done' && l.dateStr === dateStr).length;
+                                        const dateStr = new Date(year, month, i).toISOString().split('T')[0];
+                                        const doneCount = logs.filter(l => l.type === 'habit_done' && l.created_at.startsWith(dateStr)).length;
                                         const isToday = dateStr === getTodayString();
                                         
                                         let bgClass = 'bg-slate-900/50 border-slate-800 text-slate-500';
@@ -1648,7 +1510,11 @@
                                 />
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
-                                    <button onClick={addHabit} className="w-full font-bold text-lg py-3 rounded-xl transition-colors bg-gradient-to-r from-orange-500 to-orange-600 text-white">Spara</button>
+                                    <button onClick={async () => {
+                                        await addHabit(newHabit);
+                                        setNewHabit('');
+                                        setIsAdding(false);
+                                    }} className="w-full font-bold text-lg py-3 rounded-xl transition-colors bg-gradient-to-r from-orange-500 to-orange-600 text-white">Spara</button>
                                 </div>
                             </div>
                         </div>
@@ -1667,8 +1533,16 @@
                                 />
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setEditingHabit(null)} className="btn-secondary">Avbryt</button>
-                                    <button onClick={deleteHabit} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 flex-1">Ta bort</button>
-                                    <button onClick={saveHabitEdit} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600">Spara</button>
+                                    <button onClick={async () => {
+                                        if(confirm("Vill du ta bort denna vana?")) {
+                                            await deleteHabit(editingHabit.id);
+                                            setEditingHabit(null);
+                                        }
+                                    }} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 flex-1">Ta bort</button>
+                                    <button onClick={async () => {
+                                        await saveHabitEdit(editingHabit);
+                                        setEditingHabit(null);
+                                    }} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600">Spara</button>
                                 </div>
                             </div>
                         </div>
@@ -1677,20 +1551,21 @@
             );
         };
 
-        const saveToLog = (entry) => {
-            const existing = JSON.parse(localStorage.getItem('logs') || '[]');
-            existing.push(entry);
-            localStorage.setItem('logs', JSON.stringify(existing));
-        };
-
         const Settings = ({ theme, setTheme }) => {
+            const handleLogout = async () => {
+                if (confirm("Vill du logga ut?")) {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) alert("Fel vid utloggning: " + error.message);
+                }
+            };
+
             return (
                 <div className="p-4 h-full flex flex-col">
                     <div className="mb-6">
                         <h2 className="text-3xl font-bold text-white">Inställningar</h2>
                     </div>
                     
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-slate-800 rounded-lg text-blue-400">{theme === 'dark' ? <IconMoon /> : <IconSun />}</div>
@@ -1701,6 +1576,75 @@
                             </button>
                         </div>
                     </div>
+
+                    <div className="mt-auto">
+                        <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-bold py-3 px-4 rounded-lg transition-colors border border-slate-700">
+                            <IconLogOut /> Logga ut
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const Auth = () => {
+            const [loading, setLoading] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [isLogin, setIsLogin] = useState(true);
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                
+                if (isLogin) {
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) alert(error.message);
+                } else {
+                    const { error } = await supabase.auth.signUp({ email, password });
+                    if (error) alert("Kolla din mail för bekräftelselänk! (Eller fel: " + error.message + ")");
+                    else alert("Kolla din mail för att bekräfta kontot!");
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-950 shadow-2xl border-x border-slate-900 p-6 justify-center">
+                    <div className="text-center mb-10">
+                        <h1 className="font-bold text-3xl tracking-tight text-blue-400 animate-logo-glow mb-2">M-<span className="text-white">CERE</span></h1>
+                        <p className="text-slate-400">Logga in för att synka dina framsteg</p>
+                    </div>
+
+                    <form onSubmit={handleAuth} className="space-y-4">
+                        <div>
+                            <input 
+                                type="email" 
+                                placeholder="E-post" 
+                                className="input-field !mb-0"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <input 
+                                type="password" 
+                                placeholder="Lösenord" 
+                                className="input-field !mb-0"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <button disabled={loading} className="btn-primary w-full py-4 text-lg">
+                            {loading ? 'Laddar...' : (isLogin ? 'Logga in' : 'Skapa konto')}
+                        </button>
+                    </form>
+
+                    <div className="mt-6 text-center">
+                        <button onClick={() => setIsLogin(!isLogin)} className="text-slate-400 hover:text-white text-sm underline">
+                            {isLogin ? 'Inget konto? Skapa ett här' : 'Har du redan ett konto? Logga in'}
+                        </button>
+                    </div>
                 </div>
             );
         };
@@ -1709,16 +1653,154 @@
             const [activeTab, setActiveTab] = useState('home');
             const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25 });
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+            const [session, setSession] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            // Data states
+            const [logs, setLogs] = useState([]);
+            const [todos, setTodos] = useState([]);
+            const [habits, setHabits] = useState([]);
+            const [impulses, setImpulses] = useState([]);
 
             useEffect(() => {
                 document.body.className = theme === 'light' ? 'light-mode' : '';
                 localStorage.setItem('theme', theme);
             }, [theme]);
 
+            // --- Auth Listener ---
+            useEffect(() => {
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    setSession(session);
+                    if (!session) setLoading(false);
+                });
+
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                    setSession(session);
+                    if (!session) setLoading(false);
+                });
+
+                return () => subscription.unsubscribe();
+            }, []);
+
+            // --- Data Fetching ---
+            useEffect(() => {
+                if (session) {
+                    const fetchData = async () => {
+                        setLoading(true);
+                        const [logsRes, todosRes, habitsRes, impulsesRes, profileRes] = await Promise.all([
+                            supabase.from('logs').select('*').order('created_at', { ascending: false }),
+                            supabase.from('todos').select('*'),
+                            supabase.from('habits').select('*'),
+                            supabase.from('impulses').select('*'),
+                            supabase.from('profiles').select('theme').eq('id', session.user.id).single()
+                        ]);
+
+                        if (logsRes.data) setLogs(logsRes.data);
+                        if (todosRes.data) setTodos(todosRes.data);
+                        if (habitsRes.data) setHabits(habitsRes.data);
+                        if (impulsesRes.data) setImpulses(impulsesRes.data);
+                        if (profileRes.data && profileRes.data.theme) setTheme(profileRes.data.theme);
+
+                        setLoading(false);
+                    };
+                    fetchData();
+                }
+            }, [session]);
+
+            // --- Data Modification Functions ---
+
+            const saveLog = async (logEntry) => {
+                const { data, error } = await supabase.from('logs').insert(logEntry).select();
+                if (data) setLogs([data[0], ...logs]);
+                if (error) console.error("Error saving log:", error);
+            };
+
+            const deleteLog = async (logId) => {
+                const { error } = await supabase.from('logs').delete().eq('id', logId);
+                if (!error) setLogs(logs.filter(l => l.id !== logId));
+            };
+
+            const addTodo = async (newTodo) => {
+                const { data, error } = await supabase.from('todos').insert({ desc: newTodo.desc, minutes: newTodo.minutes, priority: newTodo.priority, details: newTodo.details }).select();
+                if (data) setTodos([...todos, data[0]]);
+            };
+
+            const saveTodoEdit = async (editingTodo) => {
+                const { data, error } = await supabase.from('todos').update({ desc: editingTodo.desc, minutes: editingTodo.minutes, priority: editingTodo.priority, details: editingTodo.details }).eq('id', editingTodo.id).select();
+                if (data) setTodos(todos.map(t => t.id === editingTodo.id ? data[0] : t));
+            };
+
+            const deleteTodoById = async (todoId) => {
+                const { error } = await supabase.from('todos').delete().eq('id', todoId);
+                if (!error) setTodos(todos.filter(t => t.id !== todoId));
+            };
+
+            const completeTodo = async (todo) => {
+                await saveLog({ type: 'todo_done', data: { desc: todo.desc, minutes: todo.minutes, priority: todo.priority } });
+                await deleteTodoById(todo.id);
+            };
+
+            const addHabit = async (habitName) => {
+                if (!habitName.trim()) return;
+                const { data, error } = await supabase.from('habits').insert({ name: habitName }).select();
+                if (data) setHabits([...habits, data[0]]);
+            };
+
+            const saveHabitEdit = async (editingHabit) => {
+                const { data, error } = await supabase.from('habits').update({ name: editingHabit.name }).eq('id', editingHabit.id).select();
+                if (data) setHabits(habits.map(h => h.id === editingHabit.id ? data[0] : h));
+            };
+
+            const deleteHabit = async (habitId) => {
+                const { error } = await supabase.from('habits').delete().eq('id', habitId);
+                if (!error) setHabits(habits.filter(h => h.id !== habitId));
+            };
+
+            const toggleHabit = async (habitId) => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const logIndex = logs.findIndex(l => l.type === 'habit_done' && l.created_at.startsWith(todayStr) && l.data.habitId === habitId);
+
+                if (logIndex > -1) { // It exists, so delete it
+                    await deleteLog(logs[logIndex].id);
+                } else { // It doesn't exist, so add it
+                    const habit = habits.find(h => h.id === habitId);
+                    await saveLog({ type: 'habit_done', data: { habitId: habit.id, name: habit.name } });
+                }
+            };
+
+            const addImpulse = async (newImpulse) => {
+                if(!newImpulse.desc || !newImpulse.estTime) return;
+                const estMinutes = parseInt(newImpulse.estTime);
+                let waitMinutes = (estMinutes < 20) ? 30 : estMinutes * 3;
+                const unlock_time = new Date(Date.now() + waitMinutes * 60 * 1000).toISOString();
+
+                const { data, error } = await supabase.from('impulses').insert({ desc: newImpulse.desc, est_time: estMinutes, unlock_time }).select();
+                if (data) setImpulses([...impulses, data[0]]);
+            };
+
+            const completeImpulse = async (impulse, action) => {
+                await saveLog({ type: action === 'done' ? 'impulse_done' : 'impulse_forgotten', data: { desc: impulse.desc } });
+                const { error } = await supabase.from('impulses').delete().eq('id', impulse.id);
+                if (!error) setImpulses(impulses.filter(i => i.id !== impulse.id));
+            };
+
+            const updateTheme = async (newTheme) => {
+                setTheme(newTheme);
+                await supabase.from('profiles').update({ theme: newTheme }).eq('id', session.user.id);
+            };
+
             const startTodo = (todo) => {
                 setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id }));
                 setActiveTab('timer');
             };
+
+            if (!session) {
+                return <Auth />;
+            }
+
+            if (loading) {
+                return <div className="flex items-center justify-center h-screen bg-slate-950 text-white">Laddar data...</div>;
+            }
 
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-950 shadow-2xl border-x border-slate-900">
@@ -1727,13 +1809,13 @@
                     </div>
                     <div className="flex-1 overflow-hidden relative">
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
-                            <ActivityTimer data={timerData} setData={setTimerData} />
+                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} />
                         </div>
-                        {activeTab === 'impulse' && <ImpulseControl />}
-                        {activeTab === 'todo' && <TodoList onStartTodo={startTodo} />}
-                        {activeTab === 'habits' && <HabitTracker />}
-                        {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} />}
-                        {activeTab === 'settings' && <Settings theme={theme} setTheme={setTheme} />}
+                        {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} />}
+                        {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} />}
+                        {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} />}
+                        {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} deleteLog={deleteLog} />}
+                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} />}
                     </div>
                     <div className="h-16 bg-slate-900 border-t border-slate-800 flex justify-around items-center">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
