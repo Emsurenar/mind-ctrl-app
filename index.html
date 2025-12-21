@@ -412,7 +412,7 @@
                 
                 const now = Date.now();
                 const oneDay = 24 * 60 * 60 * 1000;
-                const recent = validLogs.filter(l => (now - new Date(l.timestamp).getTime()) < oneDay);
+                const recent = validLogs.filter(l => (now - new Date(l.created_at).getTime()) < oneDay);
                 
                 const allImpulses = validLogs.filter(l => l.type === 'impulse_done' || l.type === 'impulse_forgotten');
                 const percentage = allImpulses.length > 0 ? Math.round((allImpulses.filter(l => l.type === 'impulse_done').length / allImpulses.length) * 100) : 0;
@@ -544,7 +544,7 @@
                                 <div className="p-4 overflow-y-auto space-y-6">
                                     {(() => {
                                         const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
-                                        const validLogs = logs.filter(l => new Date(l.timestamp).getTime() > resetTime);
+                                        const validLogs = logs.filter(l => new Date(l.created_at).getTime() > resetTime);
                                         const done = validLogs.filter(l => l.type === 'impulse_done').reverse();
                                         const forgotten = validLogs.filter(l => l.type === 'impulse_forgotten').reverse();
 
@@ -561,7 +561,7 @@
                                                             <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-start gap-2">
                                                                 <div>
                                                                     <p className="text-white font-medium text-sm">{l.desc || 'Okänd impuls'}</p>
-                                                                    <p className="text-slate-500 text-[10px] mt-0.5">{new Date(l.timestamp).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                                                    <p className="text-slate-500 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                                 <div className="text-green-500 scale-75 origin-top-right"><IconCheck /></div>
                                                             </div>
@@ -579,7 +579,7 @@
                                                             <div key={i} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800 flex justify-between items-start gap-2">
                                                                 <div>
                                                                     <p className="text-slate-400 font-medium text-sm">{l.desc || 'Okänd impuls'}</p>
-                                                                    <p className="text-slate-600 text-[10px] mt-0.5">{new Date(l.timestamp).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                                                    <p className="text-slate-600 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -808,7 +808,7 @@
                                             {l.data.goal || l.data.desc}
                                         </span>
                                     </div>
-                                    <span className="text-slate-500 text-xs">{new Date(l.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <span className="text-slate-500 text-xs">{new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                 </div>
                             ))}
                         </div>
@@ -1005,7 +1005,7 @@
 
                                     const timeOfDay = { morning: 0, afternoon: 0, evening: 0 };
                                     recentTodos.forEach(t => {
-                                        const h = new Date(t.timestamp).getHours();
+                                        const h = new Date(t.created_at).getHours();
                                         if (h >= 5 && h < 12) timeOfDay.morning++;
                                         else if (h >= 12 && h < 18) timeOfDay.afternoon++;
                                         else timeOfDay.evening++;
