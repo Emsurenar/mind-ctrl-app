@@ -132,6 +132,12 @@
             box-shadow: 0 0 5px rgba(255,255,255,0.8);
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @keyframes suck-in {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+            100% { transform: scale(0) rotate(720deg); opacity: 0; filter: blur(10px); }
+        }
+        .animate-suck { animation: suck-in 0.5s ease-in forwards; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -249,7 +255,7 @@
 
             // Städa upp keep-alive ljudet när vi lämnar 'running' state
             useEffect(() => {
-                if (state !== 'running' && keepAliveAudioRef.current) {
+                if (state !== 'running' && state !== 'alarm' && keepAliveAudioRef.current) {
                     try {
                         keepAliveAudioRef.current.osc.stop();
                         keepAliveAudioRef.current.ctx.close();
@@ -328,8 +334,38 @@
                 let soundInterval;
                 if (state === 'alarm') {
                     sendNotification('Tiden är ute!', { body: `Målet var: ${data.goal}` });
-                    playBeep(); // Spela direkt
-                    soundInterval = setInterval(playBeep, 1500); // Repetera var 1.5s
+                    
+                    // Uppdatera Media Session för låsskärmen (iOS/Android)
+                    if ('mediaSession' in navigator) {
+                        navigator.mediaSession.metadata = new MediaMetadata({
+                            title: "Tiden är ute!",
+                            artist: "M-CERE",
+                            album: data.goal || "Fokuspass"
+                        });
+                        navigator.mediaSession.playbackState = "playing";
+                    }
+
+                    const playAlarmSound = () => {
+                        // Använd existerande context (från keep-alive) för att fungera på låsskärmen i iOS
+                        const ctx = keepAliveAudioRef.current?.ctx || new (window.AudioContext || window.webkitAudioContext)();
+                        
+                        try {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            osc.type = 'square';
+                            osc.frequency.setValueAtTime(440, ctx.currentTime);
+                            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+                            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                            osc.start();
+                            osc.stop(ctx.currentTime + 0.5);
+                        } catch(e) { console.error("Alarm error", e); }
+                    };
+
+                    playAlarmSound(); 
+                    soundInterval = setInterval(playAlarmSound, 1500); 
                 }
                 return () => clearInterval(soundInterval);
             }, [state, data.goal]);
@@ -350,6 +386,16 @@
                             gain.gain.value = 0.0001; // Nästan tyst
                             osc.start();
                             keepAliveAudioRef.current = { ctx, osc };
+
+                            // Sätt Media Session status
+                            if ('mediaSession' in navigator) {
+                                navigator.mediaSession.metadata = new MediaMetadata({
+                                    title: "Fokus pågår",
+                                    artist: "M-CERE",
+                                    album: data.goal || "Fokuspass"
+                                });
+                                navigator.mediaSession.playbackState = "playing";
+                            }
                         }
                     } catch (e) { console.error("Keep-alive audio error", e); }
                 }
@@ -461,12 +507,11 @@
                     </div>
 
                     {showGuide && <GuideModal title="Guide: Fokus" onClose={() => setShowGuide(false)} steps={[
-                        "Välj hur länge du vill fokusera (15-60 min).",
-                        "Skriv ett tydligt mål för passet.",
-                        "Ange eventuella utmaningar och din motivationsnivå.",
-                        "Klicka på 'Starta timer'. Ett tyst ljud spelas för att hålla appen aktiv i bakgrunden.",
-                        "Jobba fokuserat tills klockan ringer.",
-                        "Utvärdera passet efteråt: Blev du klar? Hur kändes det?"
+                        "Ställ in önskad tid (5-120 min) och definiera ett konkret mål.",
+                        "Identifiera potentiella hinder och skatta din motivation.",
+                        "Starta timern. Appen förhindrar viloläge med ett tyst bakgrundsljud.",
+                        "Arbeta utan avbrott. Om du måste avbryta, använd 'Avbryt pass'.",
+                        "När larmet går: Utvärdera din insats och spara sessionen för statistik."
                     ]} />}
                 </div>
             );
@@ -741,11 +786,11 @@
                     )}
 
                     {showGuide && <GuideModal title="Guide: Impulser" onClose={() => setShowGuide(false)} steps={[
-                        "Känner du ett sug att göra något annat (kolla sociala medier, äta godis)?",
-                        "Skriv in impulsen och hur lång tid det tar.",
-                        "Appen räknar ut en väntetid (ofta 3x tiden).",
-                        "När väntetiden är över, välj om du vill 'Göra' det eller 'Glömma' det.",
-                        "Håll inne på statistiken för att nollställa räknaren."
+                        "Registrera distraherande impulser (t.ex. 'kolla Instagram') och tidsåtgång.",
+                        "En obligatorisk väntetid (fördröjning) aktiveras för att kyla ner impulsen.",
+                        "När tiden gått ut: Besluta aktivt om du vill agera på impulsen eller förkasta den.",
+                        "Använd statistiken för att se hur ofta du står emot dina impulser.",
+                        "Långtryck på statistikrutorna för att nollställa räknarna."
                     ]} />}
                 </div>
             );
@@ -1391,11 +1436,10 @@
                     )}
 
                     {showGuide && <GuideModal title="Guide: Start" onClose={() => setShowGuide(false)} steps={[
-                        "Här får du en överblick över din aktivitet.",
-                        "Växla mellan '24h' och '7d' för att se statistik för dygnet eller veckan.",
-                        "Klicka på graferna (Fokus, Uppgifter, Vanor) för att se detaljerad statistik.",
-                        "Längst ner ser du en logg över dina senaste händelser.",
-                        "Använd kugghjulet för att komma till inställningar."
+                        "Din kontrollpanel för produktivitet. Växla vy mellan senaste dygnet (24h) och veckan (7d).",
+                        "Interaktiva grafer: Klicka på Fokus, Uppgifter eller Vanor för djupgående analys.",
+                        "Tidslinje: Klicka på staplarna i tidsgrafen för att se exakt vad du gjorde vid en viss tidpunkt.",
+                        "Logg: Scrolla längst ner för att se och hantera din historik."
                     ]} />}
                 </div>
             );
@@ -1410,6 +1454,7 @@
             const longPressTimer = useRef(null);
             const isLongPress = useRef(false);
             const [showGuide, setShowGuide] = useState(false);
+            const [animatingId, setAnimatingId] = useState(null);
 
             const handleLongPressStart = (e, todo) => {
                 if (e.target.closest('button')) return; // Ignorera om man klickar på knappar
@@ -1422,6 +1467,15 @@
 
             const handleLongPressEnd = () => {
                 if (longPressTimer.current) clearTimeout(longPressTimer.current);
+            };
+
+            const handleComplete = (e, todo) => {
+                e.stopPropagation();
+                setAnimatingId(todo.id);
+                setTimeout(async () => {
+                    await completeTodo(todo);
+                    setAnimatingId(null);
+                }, 500);
             };
 
             const pColors = { high: 'border-l-red-500 bg-red-900/10', medium: 'border-l-yellow-500 bg-yellow-900/10', low: 'border-l-green-500 bg-green-900/10' };
@@ -1449,7 +1503,7 @@
                                     if (e.target.closest('button')) return;
                                     if (!isLongPress.current) setViewingTodo(t);
                                 }}
-                                className={`bg-slate-900/50 border-l-4 ${pColors[t.priority]} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer`}>
+                                className={`bg-slate-900/50 border-l-4 ${pColors[t.priority]} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer ${animatingId === t.id ? 'animate-suck' : ''}`}>
                                 <div>
                                     <h3 className="font-bold text-lg text-white">{t.desc}</h3>
                                     <div className="flex gap-3 text-xs text-slate-400 mt-1">
@@ -1459,7 +1513,7 @@
                                 </div>
                                 <div className="flex items-center">
                                     <button onClick={(e) => { e.stopPropagation(); onStartTodo(t); }} className="text-slate-400 hover:text-blue-400 p-2 transition-colors" title="Starta"><IconPlay /></button>
-                                    <button onClick={(e) => { e.stopPropagation(); completeTodo(t); }} className="text-slate-400 hover:text-green-400 p-2 transition-colors" title="Klar"><IconCheck /></button>
+                                    <button onClick={(e) => handleComplete(e, t)} className="text-slate-400 hover:text-green-400 p-2 transition-colors" title="Klar"><IconCheck /></button>
                                     <button onClick={(e) => { e.stopPropagation(); deleteTodo(t.id); }} className="text-slate-400 hover:text-red-400 p-2 transition-colors"><IconTrash /></button>
                                 </div>
                             </div>
@@ -1540,11 +1594,11 @@
                     )}
 
                     {showGuide && <GuideModal title="Guide: Att göra" onClose={() => setShowGuide(false)} steps={[
-                        "Lägg till uppgifter med tidsestimat och prioritet.",
-                        "Klicka på 'Play'-ikonen för att starta ett fokuspass direkt för den uppgiften.",
-                        "Klicka på en uppgift för att se detaljer och anteckningar.",
-                        "Håll inne på en uppgift för att redigera den.",
-                        "Klicka på 'Check'-ikonen när uppgiften är klar."
+                        "Skapa uppgifter med tidsestimat och prioritetsnivå (Hög/Medel/Låg).",
+                        "Starta (Play): Öppnar fokustimern förvald med uppgiftens mål och tid.",
+                        "Detaljer: Klicka på en uppgift för att läsa eller lägga till anteckningar.",
+                        "Redigera: Håll inne på en uppgift för att ändra innehåll eller prioritet.",
+                        "Slutför: Klicka på bocken för att logga uppgiften som klar och ta bort den från listan."
                     ]} />}
                 </div>
             );
@@ -1727,17 +1781,16 @@
                     )}
 
                     {showGuide && <GuideModal title="Guide: Vanor" onClose={() => setShowGuide(false)} steps={[
-                        "Lägg till vanor du vill utföra dagligen.",
-                        "Klicka på en vana i listan för att markera den som klar för idag.",
-                        "Håll inne på en vana för att redigera eller ta bort den.",
-                        "Använd knappen uppe till höger för att växla till kalendervy.",
-                        "I kalendern ser du din historik och streaks."
+                        "Bygg rutiner genom att bocka av dagliga vanor.",
+                        "Streak-system: Håll sviten levande genom att utföra alla aktiva vanor varje dag.",
+                        "Kalendervy: Växla vy för att se historik och mönster över tid.",
+                        "Hantera: Håll inne på en vana för att redigera namn eller radera den permanent."
                     ]} />}
                 </div>
             );
         };
 
-        const Settings = ({ theme, setTheme }) => {
+        const Settings = ({ theme, setTheme, onBack }) => {
             const [showPasswordModal, setShowPasswordModal] = useState(false);
             const [showGuide, setShowGuide] = useState(false);
             const [newPassword, setNewPassword] = useState('');
@@ -1768,7 +1821,10 @@
 
             return (
                 <div className="p-4 h-full flex flex-col">
-                    <div className="mb-6">
+                    <div className="mb-6 flex items-center gap-2">
+                        <button onClick={onBack} className="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors">
+                            <IconChevronLeft />
+                        </button>
                         <h2 className="text-3xl font-bold text-white">Inställningar</h2>
                     </div>
                     
@@ -1858,23 +1914,23 @@
                                 <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-300">
                                     <div>
                                         <h4 className="text-blue-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconTimer size={16}/> Fokus</h4>
-                                        <p>Ställ in en timer för fokuserat arbete. Logga dina distraktioner och utvärdera din prestation efteråt.</p>
+                                        <p>Arbeta i block. Sätt mål, minimera distraktioner och logga dina framsteg.</p>
                                     </div>
                                     <div>
                                         <h4 className="text-green-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconCheck size={16}/> To-do</h4>
-                                        <p>Lägg till uppgifter med estimerad tid och prioritet. Starta en uppgift för att automatiskt sätta igång fokustimern.</p>
+                                        <p>Planera din dag. Prioritera uppgifter och koppla dem direkt till fokustimern.</p>
                                     </div>
                                     <div>
                                         <h4 className="text-purple-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconGrid size={16}/> Vanor</h4>
-                                        <p>Spåra dagliga vanor. Se din streak och statistik över tid för att hålla motivationen uppe.</p>
+                                        <p>Skapa hållbara rutiner. Följ din utveckling med streaks och kalender.</p>
                                     </div>
                                     <div>
                                         <h4 className="text-yellow-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconZap size={16}/> Impulser</h4>
-                                        <p>Får du en impuls att göra något annat? Skriv ner den här och sätt en väntetid. Ofta försvinner suget!</p>
+                                        <p>Träna din impulskontroll. Fördröj omedelbar tillfredsställelse för att bryta dåliga mönster.</p>
                                     </div>
                                     <div>
                                         <h4 className="text-slate-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconHome size={16}/> Start</h4>
-                                        <p>Din översikt. Se grafer över din aktivitet, senaste händelser och din dagliga status.</p>
+                                        <p>Analysera din data. Hitta mönster i din produktivitet och optimera din tid.</p>
                                     </div>
                                 </div>
                                 <div className="p-4 border-t border-slate-800 mt-auto">
@@ -2246,9 +2302,9 @@
                         {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} />}
                         {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} />}
                         {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} deleteLog={deleteLog} />}
-                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} />}
+                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} />}
                     </div>
-                    <div className="h-16 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-4">
+                    <div className="h-24 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-8">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
                         <NavButton active={activeTab === 'todo'} onClick={() => setActiveTab('todo')} icon={<IconCheck />} label="To-do" />
                         <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<IconHome />} label="Start" />
