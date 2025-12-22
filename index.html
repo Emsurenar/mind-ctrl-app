@@ -1065,7 +1065,7 @@
             }, [recentActivity]);
 
             return (
-                <div className={`p-4 h-full flex flex-col ${getBackgroundGradient()}`}>
+                <div className={`p-4 flex flex-col ${getBackgroundGradient()}`}>
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h2 className="text-3xl font-bold text-white">{getGreeting()}</h2>
@@ -1190,9 +1190,9 @@
                         </div>
                     )}
 
-                    <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="flex flex-col">
                         <h3 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider text-left">Senaste händelser</h3>
-                        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                        <div className="space-y-2 pr-1">
                             {filteredLogs.filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 20).map((l) => (
                                 <div key={l.id} onClick={() => setSelectedLog(l)} className="group flex items-center justify-between text-sm bg-slate-900/50 border border-slate-800 p-3 rounded-xl cursor-pointer hover:bg-slate-800 transition-colors">
                                     <div className="flex items-center gap-3">
@@ -2458,12 +2458,26 @@
             };
 
             const addTodo = async (newTodo) => {
-                const { data, error } = await supabase.from('todos').insert({ desc: newTodo.desc, minutes: newTodo.minutes, priority: newTodo.priority, details: newTodo.details, category: newTodo.category }).select();
+                const { data, error } = await supabase.from('todos').insert({ 
+                    desc: newTodo.desc, 
+                    minutes: parseInt(newTodo.minutes), 
+                    priority: newTodo.priority, 
+                    details: newTodo.details, 
+                    category: newTodo.category 
+                }).select();
+                if (error) showToast("Fel vid skapande: " + error.message, "error");
                 if (data) setTodos([...todos, data[0]]);
             };
 
             const saveTodoEdit = async (editingTodo) => {
-                const { data, error } = await supabase.from('todos').update({ desc: editingTodo.desc, minutes: editingTodo.minutes, priority: editingTodo.priority, details: editingTodo.details, category: editingTodo.category }).eq('id', editingTodo.id).select();
+                const { data, error } = await supabase.from('todos').update({ 
+                    desc: editingTodo.desc, 
+                    minutes: parseInt(editingTodo.minutes), 
+                    priority: editingTodo.priority, 
+                    details: editingTodo.details, 
+                    category: editingTodo.category 
+                }).eq('id', editingTodo.id).select();
+                if (error) showToast("Fel vid sparning: " + error.message, "error");
                 if (data) setTodos(todos.map(t => t.id === editingTodo.id ? data[0] : t));
             };
 
@@ -2551,7 +2565,7 @@
                     <div className="p-4 flex items-center justify-center">
                         <h1 className="font-bold text-lg tracking-tight text-blue-400 animate-logo-glow">M-<span className="text-white">CERE</span></h1>
                     </div>
-                    <div className="flex-1 overflow-hidden relative">
+                    <div className="flex-1 overflow-y-auto relative no-scrollbar">
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
                             <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} />
                         </div>
