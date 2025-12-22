@@ -157,27 +157,34 @@
             100% { transform: translate3d(-5%, -5%, 0) rotate(-360deg) scale(1.1); }
         }
         
-        @keyframes smoke-color-cycle {
-            0% { filter: hue-rotate(0deg) brightness(1); }
-            50% { filter: hue-rotate(-20deg) brightness(0.9); }
-            100% { filter: hue-rotate(-40deg) brightness(0.6); }
+        @keyframes fire-color-cycle {
+            0% { filter: hue-rotate(10deg) brightness(1.2) saturate(1.5); } /* Mer gul/ljus */
+            50% { filter: hue-rotate(-20deg) brightness(1) saturate(1.3); } /* Mer djup röd */
+            100% { filter: hue-rotate(10deg) brightness(1.2) saturate(1.5); } /* Tillbaka till gul/ljus */
         }
-        .animate-smoke-1 { animation: smoke-1 20s infinite ease-in-out, smoke-color-cycle 15s infinite alternate ease-in-out; }
-        .animate-smoke-2 { animation: smoke-2 25s infinite ease-in-out, smoke-color-cycle 15s infinite alternate ease-in-out; }
-        .animate-smoke-3 { animation: smoke-3 30s infinite ease-in-out, smoke-color-cycle 15s infinite alternate ease-in-out; }
+        .animate-smoke-1 { animation: smoke-1 20s infinite ease-in-out, fire-color-cycle 12s infinite ease-in-out; }
+        .animate-smoke-2 { animation: smoke-2 25s infinite ease-in-out, fire-color-cycle 12s infinite ease-in-out; }
+        .animate-smoke-3 { animation: smoke-3 30s infinite ease-in-out, fire-color-cycle 12s infinite ease-in-out; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
         // --- SUPABASE CONFIGURATION ---
         // Byt ut dessa mot dina egna värden från Supabase Dashboard -> Project Settings -> API
         const supabaseUrl = 'https://ifrjtdbfhhornllbprlp.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlmcmp0ZGJmaGhvcm5sbGJwcmxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMzg2NzEsImV4cCI6MjA4MTkxNDY3MX0.-j0aBpoaOoGTcqGk27EWoE2pNz4uPWdHvhoKTNPscvk';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // --- CONSTANTS ---
+        const TODO_PRIORITIES = {
+            high: { label: 'Hög', colors: 'border-l-red-500 bg-red-900/10', sortOrder: 1 },
+            medium: { label: 'Medel', colors: 'border-l-yellow-500 bg-yellow-900/10', sortOrder: 2 },
+            low: { label: 'Låg', colors: 'border-l-green-500 bg-green-900/10', sortOrder: 3 }
+        };
 
         // --- INLINE ICONS ---
         const IconTimer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
@@ -200,6 +207,9 @@
         const IconMail = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>;
         const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
         const IconHelp = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+        const IconBook = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v2H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v2H6.5A2.5 2.5 0 0 1 4 4.5z"/></svg>;
+        const IconBriefcase = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>;
+        const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
 
         // --- AUDIO HELPER (Syntetiskt ljud, inga filer behövs) ---
         const playBeep = () => {
@@ -237,6 +247,18 @@
             }
         };
 
+        // --- HAPTIC HELPER ---
+        const vibrate = (pattern = 10) => {
+            if ('vibrate' in navigator) navigator.vibrate(pattern);
+        };
+
+        // --- CATEGORIES HELPER ---
+        const categories = {
+            plugg: { label: 'Plugg', icon: <IconBook />, color: 'text-blue-400', borderColor: 'border-blue-500/30', bgColor: 'bg-blue-900/20' },
+            jobb: { label: 'Jobb', icon: <IconBriefcase />, color: 'text-green-400', borderColor: 'border-green-500/30', bgColor: 'bg-green-900/20' },
+            personligt: { label: 'Personligt', icon: <IconUser />, color: 'text-purple-400', borderColor: 'border-purple-500/30', bgColor: 'bg-purple-900/20' },
+        };
+
         const GuideModal = ({ title, steps, onClose }) => (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onClose}>
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
@@ -259,6 +281,20 @@
             </div>
         );
 
+        const Toast = ({ message, type, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+
+            return (
+                <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 animate-scale-in ${type === 'error' ? 'bg-red-500 text-white' : 'bg-slate-800 text-white border border-slate-700'}`}>
+                    {type === 'success' && <IconCheck className="w-4 h-4 text-green-400" />}
+                    <span className="font-medium text-sm">{message}</span>
+                </div>
+            );
+        };
+
         const NavButton = ({ active, icon, label, onClick }) => (
             <button 
                 onClick={onClick}
@@ -270,7 +306,7 @@
         );
 
         // 1. Aktivitetstimer (Uppdaterad med Nedräkning & Alarm)
-        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById }) => {
+        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById, showToast }) => {
             const [state, setState] = useState('setup'); // setup, running, alarm, review
             const [remaining, setRemaining] = useState(0);
             const [targetTime, setTargetTime] = useState(null);
@@ -404,6 +440,7 @@
                 setTargetTime(Date.now() + totalSeconds * 1000);
                 setSessionBehaviors([]);
                 setState('running');
+                vibrate(50);
 
                 if ('Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
@@ -466,9 +503,10 @@
                 }
 
                 setState('setup');
-                setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25 });
+                setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt' });
                 setSessionBehaviors([]);
-                alert("Pass sparat!");
+                showToast("Pass sparat!", "success");
+                vibrate([50, 50, 50]);
             };
 
             const formatTime = (s) => {
@@ -489,6 +527,19 @@
                     </div>
                     
                     <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+                        {/* Category */}
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
+                            <label className="block text-slate-400 text-xs uppercase font-bold tracking-wider mb-3">Kategori</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {Object.keys(categories).map(key => (
+                                    <button key={key} onClick={() => setData({...data, category: key})} className={`py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${data.category === key ? 'bg-slate-700 text-white shadow-lg scale-105' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                                        {React.cloneElement(categories[key].icon, {width: 14, height: 14})}
+                                        <span>{categories[key].label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Duration */}
                         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
                             <div className="flex justify-between items-center mb-3">
@@ -547,7 +598,7 @@
                         {/* Organic Progress Background */}
                         <div 
                             className="absolute inset-0 transition-[clip-path] duration-1000 ease-linear z-0"
-                            style={{ clipPath: `circle(${progress * 1.5}% at 0 0)` }}
+                            style={{ clipPath: `inset(0 0 ${100 - progress}% 0)` }}
                         >
                             <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-orange-600/40 via-red-600/40 to-transparent animate-smoke-1 blur-3xl mix-blend-screen"></div>
                             <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-gradient-to-tl from-yellow-500/30 via-orange-500/30 to-transparent animate-smoke-2 blur-3xl mix-blend-screen"></div>
@@ -607,7 +658,7 @@
         };
 
         // 2. Impulskontroll (Oförändrad logik, bara inlistad för kompletthet)
-        const ImpulseControl = ({ logs, impulses, addImpulse, completeImpulse }) => {
+        const ImpulseControl = ({ logs, impulses, addImpulse, completeImpulse, showToast }) => {
             const [newImpulse, setNewImpulse] = useState({ desc: '', estTime: '' });
             const [now, setNow] = useState(Date.now());
             const [stats, setStats] = useState({ done: 0, forgotten: 0, percentage: 0 });
@@ -744,6 +795,7 @@
                                         addImpulse(newImpulse).then(() => {
                                             setNewImpulse({ desc: '', estTime: '' });
                                             setIsAdding(false);
+                                            showToast("Impuls låst", "success");
                                         });
                                     }}>
                                         Lås in
@@ -831,7 +883,7 @@
             const [timeRange, setTimeRange] = useState('24h');
             const [statsView, setStatsView] = useState(null);
             const [selectedGraphBarIndex, setSelectedGraphBarIndex] = useState(null);
-            const [habitStats, setHabitStats] = useState({ doneToday: 0, totalActive: 0, streak: 0, weeklyDone: 0, weeklyTotal: 0 });
+            const [categoryFilter, setCategoryFilter] = useState('all');
             const [showGuide, setShowGuide] = useState(false);
 
             const getGreeting = () => {
@@ -843,12 +895,12 @@
 
             const getBackgroundGradient = () => {
                 const h = new Date().getHours();
-                if (h >= 5 && h < 12) return "bg-gradient-to-b from-sky-950/40 to-slate-950";
-                if (h >= 12 && h < 18) return "bg-gradient-to-b from-blue-950/40 to-slate-950";
-                return "bg-gradient-to-b from-indigo-950/40 to-slate-950";
+                if (h >= 5 && h < 12) return "bg-gradient-to-b from-orange-200/10 via-sky-900/20 to-slate-950"; // Gryning
+                if (h >= 12 && h < 18) return "bg-gradient-to-b from-sky-400/10 via-blue-900/20 to-slate-950"; // Dag
+                return "bg-gradient-to-b from-indigo-950/40 via-slate-900/60 to-slate-950"; // Natt
             };
 
-            useEffect(() => {
+            const habitStats = useMemo(() => {
                 // Habit Stats Calculation
                 const todayStr = new Date().toISOString().split('T')[0];
                 const habitLogs = logs.filter(l => l.type === 'habit_done');
@@ -881,7 +933,7 @@
                     }
                 }
 
-                setHabitStats({ doneToday: doneToday, totalActive: habits.length, streak, weeklyDone, weeklyTotal: habits.length * 7 });
+                return { doneToday: doneToday, totalActive: habits.length, streak, weeklyDone, weeklyTotal: habits.length * 7 };
             }, [logs, habits]);
 
             const closeStatsView = () => {
@@ -889,68 +941,99 @@
                 setSelectedGraphBarIndex(null);
             };
 
-            // Statistik-beräkning
-            const now = new Date();
-            const timeWindow = timeRange === '24h' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
-            const recentActivity = logs.filter(l => l.type === 'activity' && (now - new Date(l.created_at).getTime()) < timeWindow);
-            const totalMinutes = Math.round(recentActivity.reduce((acc, curr) => acc + (curr.data.durationSeconds / 60), 0));
-            
-            const recentTodos = logs.filter(l => l.type === 'todo_done' && (now - new Date(l.created_at).getTime()) < timeWindow);
-            const totalTodos = recentTodos.length;
-            
-            let graphData = [];
-            let graphLabels = [];
-            let days = []; // För 7d-vyn
+            const filteredLogs = useMemo(() => logs.filter(l => {
+                if (categoryFilter === 'all') return true;
+                // Check both activity logs and todo_done logs for category
+                return l.data && l.data.category === categoryFilter;
+            }), [logs, categoryFilter]);
 
-            if (timeRange === '24h') {
-                graphData = new Array(24).fill(0);
-                recentActivity.forEach(l => {
-                    const h = new Date(l.created_at).getHours();
-                    graphData[h] += (l.data.durationSeconds / 60);
-                });
-                graphLabels = ['00:00', '12:00', '23:59'];
-            } else {
-                graphData = new Array(7).fill(0);
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    days.push(d);
+            const { recentActivity, totalMinutes, recentTodos, totalTodos } = useMemo(() => {
+                const now = new Date();
+                const timeWindow = timeRange === '24h' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+                const recentActivity = filteredLogs.filter(l => l.type === 'activity' && (now - new Date(l.created_at).getTime()) < timeWindow);
+                const totalMinutes = Math.round(recentActivity.reduce((acc, curr) => acc + (curr.data.durationSeconds / 60), 0));
+                const recentTodos = filteredLogs.filter(l => l.type === 'todo_done' && (now - new Date(l.created_at).getTime()) < timeWindow);
+                const totalTodos = recentTodos.length;
+                return { recentActivity, totalMinutes, recentTodos, totalTodos };
+            }, [filteredLogs, timeRange]);
+            
+            const { graphData, graphLabels, maxVal, days } = useMemo(() => {
+                let graphData = [];
+                let graphLabels = [];
+                let days = [];
+
+                if (timeRange === '24h') {
+                    graphData = new Array(24).fill(0);
+                    recentActivity.forEach(l => {
+                        const h = new Date(l.created_at).getHours();
+                        graphData[h] += (l.data.durationSeconds / 60);
+                    });
+                    graphLabels = ['00:00', '12:00', '23:59'];
+                } else {
+                    graphData = new Array(7).fill(0);
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        days.push(d);
+                    }
+                    
+                    recentActivity.forEach(l => {
+                        const lDate = new Date(l.created_at).toISOString().split('T')[0];
+                        const dayIndex = days.findIndex(d => d.toISOString().split('T')[0] === lDate);
+                        if (dayIndex !== -1) {
+                            graphData[dayIndex] += (l.data.durationSeconds / 60);
+                        }
+                    });
+                    
+                    const options = { weekday: 'short' };
+                    graphLabels = [days[0].toLocaleDateString('sv-SE', options), days[3].toLocaleDateString('sv-SE', options), days[6].toLocaleDateString('sv-SE', options)];
                 }
                 
+                const maxVal = Math.max(...graphData, 1);
+                return { graphData, graphLabels, maxVal, days };
+            }, [recentActivity, timeRange]);
+
+            const { pieSegments, pieGradient, totalBehaviors } = useMemo(() => {
+                const behaviorCounts = {};
                 recentActivity.forEach(l => {
-                    const lDate = new Date(l.created_at).toISOString().split('T')[0];
-                    const dayIndex = days.findIndex(d => d.toISOString().split('T')[0] === lDate);
-                    if (dayIndex !== -1) {
-                        graphData[dayIndex] += (l.data.durationSeconds / 60);
+                    if (l.data.behaviors) {
+                        l.data.behaviors.forEach(b => {
+                            behaviorCounts[b.behavior] = (behaviorCounts[b.behavior] || 0) + 1;
+                        });
                     }
                 });
-                
-                const options = { weekday: 'short' };
-                graphLabels = [days[0].toLocaleDateString('sv-SE', options), days[3].toLocaleDateString('sv-SE', options), days[6].toLocaleDateString('sv-SE', options)];
-            }
-            
-            const maxVal = Math.max(...graphData, 1);
+                const totalBehaviors = Object.values(behaviorCounts).reduce((a, b) => a + b, 0);
+                let currentAngle = 0;
+                const colors = ['#60a5fa', '#34d399', '#f87171', '#fbbf24', '#a78bfa', '#e879f9'];
+                const pieSegments = Object.entries(behaviorCounts).sort((a,b) => b[1] - a[1]).map(([name, count], index) => {
+                    const angle = (count / totalBehaviors) * 360;
+                    const color = colors[index % colors.length];
+                    const style = `${color} ${currentAngle}deg ${currentAngle + angle}deg`;
+                    currentAngle += angle;
+                    return { name, percentage: Math.round((count/totalBehaviors)*100), color, style };
+                });
+                const pieGradient = `conic-gradient(${pieSegments.map(s => s.style).join(', ')})`;
+                return { pieSegments, pieGradient, totalBehaviors };
+            }, [recentActivity]);
 
-            // Cirkeldiagram-data
-            const behaviorCounts = {};
-            recentActivity.forEach(l => {
-                if (l.data.behaviors) {
-                    l.data.behaviors.forEach(b => {
-                        behaviorCounts[b.behavior] = (behaviorCounts[b.behavior] || 0) + 1;
-                    });
-                }
-            });
-            const totalBehaviors = Object.values(behaviorCounts).reduce((a, b) => a + b, 0);
-            let currentAngle = 0;
-            const colors = ['#60a5fa', '#34d399', '#f87171', '#fbbf24', '#a78bfa', '#e879f9'];
-            const pieSegments = Object.entries(behaviorCounts).sort((a,b) => b[1] - a[1]).map(([name, count], index) => {
-                const angle = (count / totalBehaviors) * 360;
-                const color = colors[index % colors.length];
-                const style = `${color} ${currentAngle}deg ${currentAngle + angle}deg`;
-                currentAngle += angle;
-                return { name, percentage: Math.round((count/totalBehaviors)*100), color, style };
-            });
-            const pieGradient = `conic-gradient(${pieSegments.map(s => s.style).join(', ')})`;
+            const { catPieSegments, catPieGradient, totalCategoryTime } = useMemo(() => {
+                const categoryTime = { plugg: 0, jobb: 0, personligt: 0 };
+                recentActivity.forEach(l => {
+                    if (l.data.category && categoryTime[l.data.category] !== undefined) {
+                        categoryTime[l.data.category] += (l.data.durationSeconds / 60);
+                    }
+                });
+                const totalCategoryTime = Object.values(categoryTime).reduce((a, b) => a + b, 0);
+                let currentCatAngle = 0;
+                const catPieSegments = Object.entries(categoryTime).filter(([_, mins]) => mins > 0).sort((a,b) => b[1] - a[1]).map(([cat, mins]) => {
+                    const angle = (mins / totalCategoryTime) * 360;
+                    const style = `${categories[cat] ? (cat === 'plugg' ? '#60a5fa' : cat === 'jobb' ? '#4ade80' : '#c084fc') : '#64748b'} ${currentCatAngle}deg ${currentCatAngle + angle}deg`;
+                    currentCatAngle += angle;
+                    return { name: categories[cat] ? categories[cat].label : cat, percentage: Math.round((mins/totalCategoryTime)*100), color: categories[cat] ? (cat === 'plugg' ? '#60a5fa' : cat === 'jobb' ? '#4ade80' : '#c084fc') : '#64748b', style };
+                });
+                const catPieGradient = `conic-gradient(${catPieSegments.map(s => s.style).join(', ')})`;
+                return { catPieSegments, catPieGradient, totalCategoryTime };
+            }, [recentActivity]);
 
             return (
                 <div className={`p-4 h-full flex flex-col ${getBackgroundGradient()}`}>
@@ -963,6 +1046,14 @@
                             <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
                                 <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
                                 <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
+                            </div>
+                            <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                                <button onClick={() => setCategoryFilter('all')} className={`px-2 py-1 rounded text-xs font-bold transition-colors ${categoryFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Allt</button>
+                                {Object.keys(categories).map(key => (
+                                    <button key={key} onClick={() => setCategoryFilter(key)} title={categories[key].label} className={`px-2 py-1 rounded transition-colors ${categoryFilter === key ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>
+                                        {React.cloneElement(categories[key].icon, {width: 16, height: 16})}
+                                    </button>
+                                ))}
                             </div>
                             <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 <IconHelp />
@@ -1027,13 +1118,31 @@
                         </div>
                     )}
 
+                    {totalCategoryTime > 0 && (
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex items-center gap-6">
+                            <div className="w-20 h-20 rounded-full flex-shrink-0 shadow-lg" style={{ background: catPieGradient }}></div>
+                            <div className="flex-1 space-y-1">
+                                <h4 className="text-slate-400 text-xs uppercase font-bold mb-2 tracking-wider">Tid per kategori</h4>
+                                {catPieSegments.map(s => (
+                                    <div key={s.name} className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{backgroundColor: s.color}}></div><span className="text-slate-300 truncate max-w-[80px]">{s.name}</span></div>
+                                        <span className="font-bold text-white">{s.percentage}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex-1 overflow-hidden flex flex-col">
                         <h3 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider text-left">Senaste händelser</h3>
                         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                            {logs.slice().reverse().filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 20).map((l) => (
+                            {filteredLogs.filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 20).map((l) => (
                                 <div key={l.id} onClick={() => setSelectedLog(l)} className="group flex items-center justify-between text-sm bg-slate-900/50 border border-slate-800 p-3 rounded-xl cursor-pointer hover:bg-slate-800 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${l.type === 'activity' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                                        {l.data.category && categories[l.data.category] 
+                                            ? React.cloneElement(categories[l.data.category].icon, { className: `w-4 h-4 ${categories[l.data.category].color}` })
+                                            : <div className={`w-4 h-4 rounded-full ${l.type === 'activity' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                                        }
                                         <span className="text-white font-medium truncate max-w-[150px]">
                                             {l.data.goal || l.data.desc}
                                         </span>
@@ -1079,6 +1188,15 @@
                                         <h3 className="text-xl font-bold text-white leading-tight">
                                             {selectedLog.data.goal || selectedLog.data.desc || selectedLog.data.behavior || selectedLog.data.name}
                                         </h3>
+                                        {selectedLog.data.category && categories[selectedLog.data.category] && (
+                                            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase" style={{
+                                                color: `rgb(var(--c-${selectedLog.data.category === 'plugg' ? 'blue' : selectedLog.data.category === 'jobb' ? 'green' : 'purple'}))`,
+                                                backgroundColor: `rgba(var(--c-${selectedLog.data.category === 'plugg' ? 'blue' : selectedLog.data.category === 'jobb' ? 'green' : 'purple'}-dark), 0.2)`
+                                            }}>
+                                                {React.cloneElement(categories[selectedLog.data.category].icon, {width: 12, height: 12})}
+                                                <span>{categories[selectedLog.data.category].label}</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {selectedLog.type === 'activity' && (
@@ -1475,8 +1593,8 @@
         };
 
         // 4. To-do List
-        const TodoList = ({ todos, onStartTodo, addTodo, completeTodo, deleteTodo, saveTodoEdit }) => {
-            const [newTodo, setNewTodo] = useState({ desc: '', minutes: '', priority: 'medium', details: '' });
+        const TodoList = ({ todos, onStartTodo, addTodo, completeTodo, deleteTodo, saveTodoEdit, showToast }) => {
+            const [newTodo, setNewTodo] = useState({ desc: '', minutes: '', priority: 'medium', details: '', category: 'personligt' });
             const [isAdding, setIsAdding] = useState(false);
             const [editingTodo, setEditingTodo] = useState(null);
             const [viewingTodo, setViewingTodo] = useState(null);
@@ -1484,6 +1602,14 @@
             const isLongPress = useRef(false);
             const [showGuide, setShowGuide] = useState(false);
             const [animatingId, setAnimatingId] = useState(null);
+
+            const sortedTodos = useMemo(() => {
+                return [...todos].sort((a, b) => {
+                    const priorityA = TODO_PRIORITIES[a.priority]?.sortOrder || 3;
+                    const priorityB = TODO_PRIORITIES[b.priority]?.sortOrder || 3;
+                    return priorityA - priorityB;
+                });
+            }, [todos]);
 
             const handleLongPressStart = (e, todo) => {
                 if (e.target.closest('button')) return; // Ignorera om man klickar på knappar
@@ -1503,12 +1629,10 @@
                 setAnimatingId(todo.id);
                 setTimeout(async () => {
                     await completeTodo(todo);
+                    vibrate([10, 30]);
                     setAnimatingId(null);
                 }, 500);
             };
-
-            const pColors = { high: 'border-l-red-500 bg-red-900/10', medium: 'border-l-yellow-500 bg-yellow-900/10', low: 'border-l-green-500 bg-green-900/10' };
-            const pLabels = { high: 'Hög', medium: 'Medel', low: 'Låg' };
 
             return (
                 <div className="p-4 h-full flex flex-col relative">
@@ -1519,7 +1643,7 @@
 
                     <div className="flex-1 overflow-y-auto space-y-3 pb-20">
                         {todos.length === 0 && <p className="text-center text-slate-500 mt-10 text-sm">Inget att göra.</p>}
-                        {[...todos].sort((a, b) => ({ 'high': 1, 'medium': 2, 'low': 3 }[a.priority] - { 'high': 1, 'medium': 2, 'low': 3 }[b.priority])).map(t => (
+                        {sortedTodos.map(t => (
                             <div 
                                 key={t.id} 
                                 onMouseDown={(e) => handleLongPressStart(e, t)}
@@ -1532,13 +1656,16 @@
                                     if (e.target.closest('button')) return;
                                     if (!isLongPress.current) setViewingTodo(t);
                                 }}
-                                className={`bg-slate-900/50 border-l-4 ${pColors[t.priority]} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer ${animatingId === t.id ? 'animate-suck' : ''}`}>
-                                <div>
+                                className={`bg-slate-900/50 border-l-4 ${TODO_PRIORITIES[t.priority]?.colors || ''} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer ${animatingId === t.id ? 'animate-suck' : ''}`}>
+                                <div className="flex items-center gap-3">
+                                    {categories[t.category] && React.cloneElement(categories[t.category].icon, { className: 'w-5 h-5 text-slate-500 flex-shrink-0' })}
+                                    <div>
                                     <h3 className="font-bold text-lg text-white">{t.desc}</h3>
                                     <div className="flex gap-3 text-xs text-slate-400 mt-1">
                                         <span className="flex items-center gap-1">{t.minutes} min</span>
-                                        <span className="uppercase font-bold tracking-wider self-center px-2 py-0.5 rounded bg-slate-800">{pLabels[t.priority]}</span>
+                                        <span className="uppercase font-bold tracking-wider self-center px-2 py-0.5 rounded bg-slate-800">{TODO_PRIORITIES[t.priority]?.label}</span>
                                     </div>
+                                </div>
                                 </div>
                                 <div className="flex items-center">
                                     <button onClick={(e) => { e.stopPropagation(); onStartTodo(t); }} className="text-slate-400 hover:text-blue-400 p-2 transition-colors" title="Starta"><IconPlay /></button>
@@ -1563,17 +1690,26 @@
                                 <input className="input-field text-center !py-3 !mb-3" placeholder="Aktivitet" autoFocus value={newTodo.desc} onChange={e => setNewTodo({...newTodo, desc: e.target.value})} />
                                 <input type="number" className="input-field text-center !py-3 !mb-3" placeholder="Tid (min)?" value={newTodo.minutes} onChange={e => setNewTodo({...newTodo, minutes: e.target.value})} />
                                 <textarea className="input-field text-center !py-3 !mb-3 min-h-[80px] resize-none" placeholder="Beskrivning / Anteckningar (valfritt)" value={newTodo.details || ''} onChange={e => setNewTodo({...newTodo, details: e.target.value})} />
+                                <div className="mb-4">
+                                    <label className="block text-slate-400 text-xs uppercase font-bold tracking-wider mb-3">Kategori</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {Object.keys(categories).map(key => (
+                                            <button key={key} type="button" onClick={() => setNewTodo({...newTodo, category: key})} className={`py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${newTodo.category === key ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-400'}`}>{categories[key].label}</button>
+                                        ))}
+                                    </div>
+                                </div>
                                 <div className="flex gap-2 justify-center mb-4 mt-2">
                                     {['high', 'medium', 'low'].map(p => (
-                                        <button key={p} onClick={() => setNewTodo({...newTodo, priority: p})} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${newTodo.priority === p ? (p === 'high' ? 'bg-red-600 text-white shadow' : p === 'medium' ? 'bg-yellow-600 text-white shadow' : 'bg-green-600 text-white shadow') : 'bg-slate-800 text-slate-400'}`}>{pLabels[p]}</button>
+                                        <button key={p} onClick={() => setNewTodo({...newTodo, priority: p})} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${newTodo.priority === p ? (p === 'high' ? 'bg-red-600 text-white shadow' : p === 'medium' ? 'bg-yellow-600 text-white shadow' : 'bg-green-600 text-white shadow') : 'bg-slate-800 text-slate-400'}`}>{TODO_PRIORITIES[p].label}</button>
                                     ))}
                                 </div>
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
                                     <button disabled={!newTodo.desc || !newTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!newTodo.desc || !newTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={async () => {
                                         await addTodo(newTodo);
-                                        setNewTodo({ desc: '', minutes: '', priority: 'medium', details: '' });
+                                        setNewTodo({ desc: '', minutes: '', priority: 'medium', details: '', category: 'personligt' });
                                         setIsAdding(false);
+                                        vibrate(20);
                                     }}>Skapa</button>
                                 </div>
                             </div>
@@ -1587,9 +1723,17 @@
                                 <input className="input-field text-center !py-3 !mb-3" placeholder="Aktivitet" autoFocus value={editingTodo.desc} onChange={e => setEditingTodo({...editingTodo, desc: e.target.value})} />
                                 <input type="number" className="input-field text-center !py-3 !mb-3" placeholder="Tid (min)?" value={editingTodo.minutes} onChange={e => setEditingTodo({...editingTodo, minutes: e.target.value})} />
                                 <textarea className="input-field text-center !py-3 !mb-3 min-h-[80px] resize-none" placeholder="Beskrivning / Anteckningar" value={editingTodo.details || ''} onChange={e => setEditingTodo({...editingTodo, details: e.target.value})} />
+                                <div className="mb-4">
+                                    <label className="block text-slate-400 text-xs uppercase font-bold tracking-wider mb-3">Kategori</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {Object.keys(categories).map(key => (
+                                            <button key={key} type="button" onClick={() => setEditingTodo({...editingTodo, category: key})} className={`py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${editingTodo.category === key ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-400'}`}>{categories[key].label}</button>
+                                        ))}
+                                    </div>
+                                </div>
                                 <div className="flex gap-2 justify-center mb-4 mt-2">
                                     {['high', 'medium', 'low'].map(p => (
-                                        <button key={p} onClick={() => setEditingTodo({...editingTodo, priority: p})} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${editingTodo.priority === p ? (p === 'high' ? 'bg-red-600 text-white shadow' : p === 'medium' ? 'bg-yellow-600 text-white shadow' : 'bg-green-600 text-white shadow') : 'bg-slate-800 text-slate-400'}`}>{pLabels[p]}</button>
+                                        <button key={p} onClick={() => setEditingTodo({...editingTodo, priority: p})} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${editingTodo.priority === p ? (p === 'high' ? 'bg-red-600 text-white shadow' : p === 'medium' ? 'bg-yellow-600 text-white shadow' : 'bg-green-600 text-white shadow') : 'bg-slate-800 text-slate-400'}`}>{TODO_PRIORITIES[p].label}</button>
                                     ))}
                                 </div>
                                 <div className="flex gap-2 mt-4">
@@ -1608,7 +1752,7 @@
                             <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-2xl font-bold text-white">{viewingTodo.desc}</h3>
-                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${viewingTodo.priority === 'high' ? 'bg-red-900/30 text-red-400' : viewingTodo.priority === 'medium' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-green-900/30 text-green-400'}`}>{pLabels[viewingTodo.priority]}</span>
+                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${viewingTodo.priority === 'high' ? 'bg-red-900/30 text-red-400' : viewingTodo.priority === 'medium' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-green-900/30 text-green-400'}`}>{TODO_PRIORITIES[viewingTodo.priority]?.label}</span>
                                 </div>
                                 <div className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-800">
                                     <p className="text-slate-400 text-xs font-bold uppercase mb-2">Beskrivning</p>
@@ -1634,7 +1778,7 @@
         };
 
         // 5. Habit Tracker
-        const HabitTracker = ({ habits, logs, addHabit, toggleHabit, saveHabitEdit, deleteHabit }) => {
+        const HabitTracker = ({ habits, logs, addHabit, toggleHabit, saveHabitEdit, deleteHabit, showToast }) => {
             const [newHabit, setNewHabit] = useState('');
             const [isAdding, setIsAdding] = useState(false);
             const [editingHabit, setEditingHabit] = useState(null);
@@ -1659,23 +1803,27 @@
             const handleHabitClick = (habitId) => {
                 if (isLongPress.current) return;
                 toggleHabit(habitId);
+                vibrate(20);
             };
 
             const getTodayString = () => new Date().toISOString().split('T')[0];
 
-            const todayStr = getTodayString();
-            const completedTodayIds = new Set(
-                logs
-                    .filter(l => l.type === 'habit_done' && l.created_at.startsWith(todayStr))
-                    .map(l => l.data.habitId)
-            );
+            const habitsWithStatus = useMemo(() => {
+                const todayStr = getTodayString();
+                const completedTodayIds = new Set(
+                    logs
+                        .filter(l => l.type === 'habit_done' && l.created_at.startsWith(todayStr))
+                        .map(l => l.data.habitId)
+                );
+                return habits.map(h => ({
+                    ...h,
+                    completed: completedTodayIds.has(h.id)
+                }));
+            }, [logs, habits]);
 
-            const habitsWithStatus = habits.map(h => ({
-                ...h,
-                completed: completedTodayIds.has(h.id)
-            }));
-
-            const sortedHabits = [...habitsWithStatus].sort((a, b) => a.completed - b.completed);
+            const sortedHabits = useMemo(() => {
+                return [...habitsWithStatus].sort((a, b) => a.completed - b.completed);
+            }, [habitsWithStatus]);
 
             return (
                 <div className="p-4 h-full flex flex-col relative">
@@ -1721,31 +1869,31 @@
                                 {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map(d => <span key={d} className="text-xs text-slate-500 font-bold">{d}</span>)}
                             </div>
                             <div className="grid grid-cols-7 gap-2">
-                                {(() => {
-                                    const year = calendarDate.getFullYear();
-                                    const month = calendarDate.getMonth();
-                                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                                    const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
-                                    
-                                    const cells = [];
-                                    for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`}></div>);
-                                    for (let i = 1; i <= daysInMonth; i++) {
-                                        const dateStr = new Date(year, month, i).toISOString().split('T')[0];
-                                        const doneCount = logs.filter(l => l.type === 'habit_done' && l.created_at.startsWith(dateStr)).length;
-                                        const isToday = dateStr === getTodayString();
+                                {useMemo(() => {
+                                        const year = calendarDate.getFullYear();
+                                        const month = calendarDate.getMonth();
+                                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                                        const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
                                         
-                                        let bgClass = 'bg-slate-900/50 border-slate-800 text-slate-500';
-                                        if (doneCount > 0) bgClass = 'bg-green-900/30 border-green-500/30 text-green-400';
-                                        if (doneCount >= 3) bgClass = 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/50';
+                                        const cells = [];
+                                        for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`}></div>);
+                                        for (let i = 1; i <= daysInMonth; i++) {
+                                            const dateStr = new Date(year, month, i).toISOString().split('T')[0];
+                                            const doneCount = logs.filter(l => l.type === 'habit_done' && l.created_at.startsWith(dateStr)).length;
+                                            const isToday = dateStr === getTodayString();
+                                            
+                                            let bgClass = 'bg-slate-900/50 border-slate-800 text-slate-500';
+                                            if (doneCount > 0) bgClass = 'bg-green-900/30 border-green-500/30 text-green-400';
+                                            if (doneCount >= 3) bgClass = 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/50';
 
-                                        cells.push(
-                                            <div key={i} className={`aspect-square rounded-xl border flex items-center justify-center text-sm font-bold relative transition-all ${bgClass} ${isToday ? 'ring-2 ring-blue-500 z-10' : ''}`}>
-                                                {i}
-                                            </div>
-                                        );
-                                    }
-                                    return cells;
-                                })()}
+                                            cells.push(
+                                                <div key={i} className={`aspect-square rounded-xl border flex items-center justify-center text-sm font-bold relative transition-all ${bgClass} ${isToday ? 'ring-2 ring-blue-500 z-10' : ''}`}>
+                                                    {i}
+                                                </div>
+                                            );
+                                        }
+                                        return cells;
+                                    }, [calendarDate, logs])}
                             </div>
                         </div>
                     )}
@@ -1758,52 +1906,72 @@
                     </button>
 
                     {isAdding && (
-                        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setIsAdding(false)}>
-                            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in text-center" onClick={e => e.stopPropagation()}>
-                                <h3 className="text-2xl font-bold mb-6 text-white">Ny vana</h3>
-                                <input 
-                                    className="input-field text-center !py-3 !mb-3" 
-                                    placeholder="Vad vill du göra?" 
-                                    autoFocus
-                                    value={newHabit} 
-                                    onChange={e => setNewHabit(e.target.value)}
-                                    onKeyPress={e => e.key === 'Enter' && addHabit()}
-                                />
-                                <div className="flex gap-2 mt-4">
-                                    <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
-                                    <button onClick={async () => {
-                                        await addHabit(newHabit);
-                                        setNewHabit('');
-                                        setIsAdding(false);
-                                    }} className="w-full font-bold text-lg py-3 rounded-xl transition-colors bg-gradient-to-r from-orange-500 to-orange-600 text-white">Spara</button>
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setIsAdding(false)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="h-24 bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center relative">
+                                    <div className="z-10 flex flex-col items-center">
+                                        <div className="p-3 bg-white/10 backdrop-blur-md rounded-full mb-1 shadow-lg border border-white/20 text-white"><IconGrid /></div>
+                                        <span className="text-white font-bold text-lg shadow-black/50 drop-shadow-md">Ny vana</span>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <div className="relative group mb-6">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors"><IconGrid /></div>
+                                        <input 
+                                            className="w-full bg-slate-900/50 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:bg-slate-900 transition-all"
+                                            placeholder="Namn på vanan..." 
+                                            autoFocus
+                                            value={newHabit} 
+                                            onChange={e => setNewHabit(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
+                                        <button onClick={async () => {
+                                            await addHabit(newHabit);
+                                            setNewHabit('');
+                                            setIsAdding(false);
+                                            showToast("Vana tillagd", "success");
+                                        }} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600">Spara</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {editingHabit && (
-                        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setEditingHabit(null)}>
-                            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in text-center" onClick={e => e.stopPropagation()}>
-                                <h3 className="text-2xl font-bold mb-6 text-white">Redigera vana</h3>
-                                <input 
-                                    className="input-field text-center !py-3 !mb-3" 
-                                    placeholder="Vad vill du göra?" 
-                                    autoFocus
-                                    value={editingHabit.name} 
-                                    onChange={e => setEditingHabit({...editingHabit, name: e.target.value})}
-                                />
-                                <div className="flex gap-2 mt-4">
-                                    <button onClick={() => setEditingHabit(null)} className="btn-secondary">Avbryt</button>
-                                    <button onClick={async () => {
-                                        if(confirm("Vill du ta bort denna vana?")) {
-                                            await deleteHabit(editingHabit.id);
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setEditingHabit(null)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="h-24 bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center relative">
+                                    <div className="z-10 flex flex-col items-center">
+                                        <div className="p-3 bg-white/10 backdrop-blur-md rounded-full mb-1 shadow-lg border border-white/20 text-white"><IconGrid /></div>
+                                        <span className="text-white font-bold text-lg shadow-black/50 drop-shadow-md">Redigera vana</span>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <div className="relative group mb-6">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors"><IconGrid /></div>
+                                        <input 
+                                            className="w-full bg-slate-900/50 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:bg-slate-900 transition-all"
+                                            placeholder="Namn på vanan" 
+                                            autoFocus
+                                            value={editingHabit.name} 
+                                            onChange={e => setEditingHabit({...editingHabit, name: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setEditingHabit(null)} className="btn-secondary flex-1">Avbryt</button>
+                                        <button onClick={async () => {
+                                            if(confirm("Vill du ta bort denna vana?")) {
+                                                await deleteHabit(editingHabit.id);
+                                                setEditingHabit(null);
+                                            }
+                                        }} className="bg-red-900/20 hover:bg-red-900/40 text-red-400 font-bold py-3 px-4 rounded-xl transition-colors active:scale-95">Ta bort</button>
+                                        <button onClick={async () => {
+                                            await saveHabitEdit(editingHabit);
                                             setEditingHabit(null);
-                                        }
-                                    }} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 flex-1">Ta bort</button>
-                                    <button onClick={async () => {
-                                        await saveHabitEdit(editingHabit);
-                                        setEditingHabit(null);
-                                    }} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600">Spara</button>
+                                        }} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600 flex-1">Spara</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1819,7 +1987,7 @@
             );
         };
 
-        const Settings = ({ theme, setTheme, onBack }) => {
+        const Settings = ({ theme, setTheme, onBack, showToast }) => {
             const [showPasswordModal, setShowPasswordModal] = useState(false);
             const [showGuide, setShowGuide] = useState(false);
             const [newPassword, setNewPassword] = useState('');
@@ -1833,9 +2001,9 @@
                 setLoading(true);
                 const { error } = await supabase.auth.updateUser({ password: newPassword });
                 setLoading(false);
-                if (error) alert("Fel: " + error.message);
+                if (error) showToast("Fel: " + error.message, "error");
                 else {
-                    alert("Lösenordet har uppdaterats!");
+                    showToast("Lösenordet har uppdaterats!", "success");
                     setNewPassword('');
                     setShowPasswordModal(false);
                 }
@@ -1844,7 +2012,7 @@
             const handleLogout = async () => {
                 if (confirm("Vill du logga ut?")) {
                     const { error } = await supabase.auth.signOut();
-                    if (error) alert("Fel vid utloggning: " + error.message);
+                    if (error) showToast("Fel vid utloggning: " + error.message, "error");
                 }
             };
 
@@ -2160,10 +2328,11 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('home');
-            const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25 });
+            const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt' });
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
             const [session, setSession] = useState(null);
             const [loading, setLoading] = useState(true);
+            const [toast, setToast] = useState(null);
 
             // Data states
             const [logs, setLogs] = useState([]);
@@ -2218,6 +2387,8 @@
 
             // --- Data Modification Functions ---
 
+            const showToast = (message, type = 'info') => setToast({ message, type });
+
             const saveLog = async (logEntry) => {
                 const { data, error } = await supabase.from('logs').insert(logEntry).select();
                 if (data) setLogs([data[0], ...logs]);
@@ -2230,12 +2401,12 @@
             };
 
             const addTodo = async (newTodo) => {
-                const { data, error } = await supabase.from('todos').insert({ desc: newTodo.desc, minutes: newTodo.minutes, priority: newTodo.priority, details: newTodo.details }).select();
+                const { data, error } = await supabase.from('todos').insert({ desc: newTodo.desc, minutes: newTodo.minutes, priority: newTodo.priority, details: newTodo.details, category: newTodo.category }).select();
                 if (data) setTodos([...todos, data[0]]);
             };
 
             const saveTodoEdit = async (editingTodo) => {
-                const { data, error } = await supabase.from('todos').update({ desc: editingTodo.desc, minutes: editingTodo.minutes, priority: editingTodo.priority, details: editingTodo.details }).eq('id', editingTodo.id).select();
+                const { data, error } = await supabase.from('todos').update({ desc: editingTodo.desc, minutes: editingTodo.minutes, priority: editingTodo.priority, details: editingTodo.details, category: editingTodo.category }).eq('id', editingTodo.id).select();
                 if (data) setTodos(todos.map(t => t.id === editingTodo.id ? data[0] : t));
             };
 
@@ -2245,7 +2416,7 @@
             };
 
             const completeTodo = async (todo) => {
-                await saveLog({ type: 'todo_done', data: { desc: todo.desc, minutes: todo.minutes, priority: todo.priority } });
+                await saveLog({ type: 'todo_done', data: { desc: todo.desc, minutes: todo.minutes, priority: todo.priority, category: todo.category } });
                 await deleteTodoById(todo.id);
             };
 
@@ -2299,7 +2470,7 @@
             };
 
             const startTodo = (todo) => {
-                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id }));
+                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, category: todo.category }));
                 setActiveTab('timer');
             };
 
@@ -2325,14 +2496,15 @@
                     </div>
                     <div className="flex-1 overflow-hidden relative">
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
-                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} />
+                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} />
                         </div>
-                        {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} />}
-                        {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} />}
-                        {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} />}
+                        {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} showToast={showToast} />}
+                        {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} showToast={showToast} />}
+                        {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} showToast={showToast} />}
                         {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} deleteLog={deleteLog} />}
-                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} />}
+                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} showToast={showToast} />}
                     </div>
+                    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                     <div className="h-24 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-8">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
                         <NavButton active={activeTab === 'todo'} onClick={() => setActiveTab('todo')} icon={<IconCheck />} label="To-do" />
