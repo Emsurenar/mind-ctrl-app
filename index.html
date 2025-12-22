@@ -501,6 +501,10 @@
                 await saveLog(sessionLog);
 
                 if (review.success && data.originTodoId) {
+                    await saveLog({ 
+                        type: 'todo_done', 
+                        data: { desc: data.goal, minutes: data.durationMinutes, priority: data.priority || 'medium', category: data.category } 
+                    });
                     await deleteTodoById(data.originTodoId);
                 }
 
@@ -2556,7 +2560,7 @@
             };
 
             const startTodo = (todo) => {
-                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, category: todo.category }));
+                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, category: todo.category, priority: todo.priority }));
                 setActiveTab('timer');
             };
 
