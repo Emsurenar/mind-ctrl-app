@@ -1763,10 +1763,12 @@
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
                                     <button disabled={!newTodo.desc || !newTodo.minutes} className={`w-full font-bold text-lg py-3 rounded-xl transition-colors ${(!newTodo.desc || !newTodo.minutes) ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'}`} onClick={async () => {
-                                        await addTodo(newTodo);
-                                        setNewTodo({ desc: '', minutes: '', priority: 'medium', details: '', category: 'personligt' });
-                                        setIsAdding(false);
-                                        vibrate(20);
+                                        const success = await addTodo(newTodo);
+                                        if (success) {
+                                            setNewTodo({ desc: '', minutes: '', priority: 'medium', details: '', category: 'personligt' });
+                                            setIsAdding(false);
+                                            vibrate(20);
+                                        }
                                     }}>Skapa</button>
                                 </div>
                             </div>
@@ -2458,15 +2460,28 @@
             };
 
             const addTodo = async (newTodo) => {
+                const mins = parseInt(newTodo.minutes);
+                if (isNaN(mins)) {
+                    showToast("Ogiltigt antal minuter", "error");
+                    return false;
+                }
                 const { data, error } = await supabase.from('todos').insert({ 
+                    user_id: session.user.id,
                     desc: newTodo.desc, 
-                    minutes: parseInt(newTodo.minutes), 
+                    minutes: mins, 
                     priority: newTodo.priority, 
                     details: newTodo.details, 
                     category: newTodo.category 
                 }).select();
-                if (error) showToast("Fel vid skapande: " + error.message, "error");
-                if (data) setTodos([...todos, data[0]]);
+                if (error) {
+                    showToast("Fel vid skapande: " + error.message, "error");
+                    return false;
+                }
+                if (data) {
+                    setTodos(prev => [...prev, data[0]]);
+                    return true;
+                }
+                return false;
             };
 
             const saveTodoEdit = async (editingTodo) => {
@@ -2478,7 +2493,7 @@
                     category: editingTodo.category 
                 }).eq('id', editingTodo.id).select();
                 if (error) showToast("Fel vid sparning: " + error.message, "error");
-                if (data) setTodos(todos.map(t => t.id === editingTodo.id ? data[0] : t));
+                if (data) setTodos(prev => prev.map(t => t.id === editingTodo.id ? data[0] : t));
             };
 
             const deleteTodoById = async (todoId) => {
