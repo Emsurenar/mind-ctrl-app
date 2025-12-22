@@ -1267,14 +1267,11 @@
                                 <p className="text-slate-400 text-xs capitalize">{new Date().toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                             <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
                                 <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
                                 <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
                             </div>
-                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
-                                <IconHelp />
-                            </button>
                             <button onClick={onOpenSettings} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 <IconSettings />
                             </button>
@@ -1867,6 +1864,52 @@
                             }} 
                         />
                     )}
+
+                    {showLevelInfo && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowLevelInfo(false)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                                    <h3 className="font-bold text-white text-lg">Din Nivå</h3>
+                                    <button onClick={() => setShowLevelInfo(false)} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
+                                </div>
+                                <div className="p-6 text-center">
+                                    <div className="inline-block p-4 rounded-full bg-yellow-500/10 border border-yellow-500/30 mb-4">
+                                        <span className="text-4xl font-black text-yellow-500">LVL {level}</span>
+                                    </div>
+                                    <p className="text-slate-400 text-sm mb-6">Du har <span className="text-white font-bold">{xp} XP</span> totalt.</p>
+                                    
+                                    <div className="bg-slate-800/50 rounded-xl p-4 mb-6 text-left">
+                                        <div className="flex justify-between text-xs mb-2">
+                                            <span className="text-slate-400">Nästa nivå</span>
+                                            <span className="text-white font-bold">{Math.round(xpProgress)} / {xpNeeded} XP</span>
+                                        </div>
+                                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                            <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400" style={{width: `${progressPercent}%`}}></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 text-left">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hur får jag XP?</h4>
+                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
+                                            <span className="text-slate-300">Slutför uppgift</span>
+                                            <span className="text-yellow-500 font-bold">+50 XP</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
+                                            <span className="text-slate-300">Utför vana</span>
+                                            <span className="text-yellow-500 font-bold">+15 XP</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
+                                            <span className="text-slate-300">Fokuspass (lyckat)</span>
+                                            <span className="text-yellow-500 font-bold">+100 XP</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t border-slate-800">
+                                    <button className="btn-primary w-full" onClick={() => setShowLevelInfo(false)}>Stäng</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -1930,7 +1973,7 @@
             };
 
             return (
-                <div className="relative mb-2 select-none rounded-xl overflow-hidden h-full">
+                <div className="relative select-none rounded-xl overflow-hidden">
                     <div className={`absolute inset-0 flex items-center justify-start pl-6 transition-all duration-300 ${translateX > 0 ? 'bg-green-600 opacity-100' : 'bg-slate-800 opacity-0'}`}>
                         <IconCheck className="text-white w-8 h-8" />
                     </div>
@@ -2003,7 +2046,7 @@
                         <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-3 pb-20">
+                    <div className="flex-1 overflow-y-auto space-y-2 pb-20">
                         {todos.length === 0 && <p className="text-center text-slate-500 mt-10 text-sm">Inget att göra.</p>}
                         {sortedTodos.map(t => (
                             <SwipeableTodoItem 
@@ -2176,6 +2219,42 @@
                 return [...habitsWithStatus].sort((a, b) => a.completed - b.completed);
             }, [habitsWithStatus]);
 
+            const calendarCells = useMemo(() => {
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
+                
+                const cells = [];
+                for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`}></div>);
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const d = new Date(year, month, i);
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    
+                    const doneCount = logs.filter(l => {
+                        if (l.type !== 'habit_done') return false;
+                        const logDate = new Date(l.created_at);
+                        const logDateStr = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
+                        return logDateStr === dateStr;
+                    }).length;
+
+                    const today = new Date();
+                    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                    const isToday = dateStr === todayStr;
+                    
+                    let bgClass = 'bg-slate-900/50 border-slate-800 text-slate-500';
+                    if (doneCount > 0) bgClass = 'bg-green-900/30 border-green-500/30 text-green-400';
+                    if (doneCount >= 3) bgClass = 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/50';
+
+                    cells.push(
+                        <div key={i} className={`aspect-square rounded-xl border flex items-center justify-center text-sm font-bold relative transition-all ${bgClass} ${isToday ? 'ring-2 ring-blue-500 z-10' : ''}`}>
+                            {i}
+                        </div>
+                    );
+                }
+                return cells;
+            }, [calendarDate, logs]);
+
             return (
                 <div className="p-4 h-full flex flex-col relative">
                     <div className="mb-6 flex justify-between items-start">
@@ -2220,41 +2299,7 @@
                                 {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map(d => <span key={d} className="text-xs text-slate-500 font-bold">{d}</span>)}
                             </div>
                             <div className="grid grid-cols-7 gap-2">
-                                {useMemo(() => {
-                                        const year = calendarDate.getFullYear();
-                                        const month = calendarDate.getMonth();
-                                        const daysInMonth = new Date(year, month + 1, 0).getDate();
-                                        const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
-                                        
-                                        const cells = [];
-                                        for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`}></div>);
-                                        for (let i = 1; i <= daysInMonth; i++) {
-                                            const d = new Date(year, month, i);
-                                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                                            
-                                            const doneCount = logs.filter(l => {
-                                                if (l.type !== 'habit_done') return false;
-                                                const logDate = new Date(l.created_at);
-                                                const logDateStr = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
-                                                return logDateStr === dateStr;
-                                            }).length;
-
-                                            const today = new Date();
-                                            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                                            const isToday = dateStr === todayStr;
-                                            
-                                            let bgClass = 'bg-slate-900/50 border-slate-800 text-slate-500';
-                                            if (doneCount > 0) bgClass = 'bg-green-900/30 border-green-500/30 text-green-400';
-                                            if (doneCount >= 3) bgClass = 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/50';
-
-                                            cells.push(
-                                                <div key={i} className={`aspect-square rounded-xl border flex items-center justify-center text-sm font-bold relative transition-all ${bgClass} ${isToday ? 'ring-2 ring-blue-500 z-10' : ''}`}>
-                                                    {i}
-                                                </div>
-                                            );
-                                        }
-                                        return cells;
-                                    }, [calendarDate, logs])}
+                                {calendarCells}
                             </div>
                         </div>
                     )}
@@ -2548,61 +2593,6 @@
                                     <button className="btn-primary w-full" onClick={() => setShowGuide(false)}>
                                         Jag förstår!
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showPlanModal && (
-                        <PlanSetupModal 
-                            todos={todos} 
-                            habits={habits} 
-                            onClose={() => setShowPlanModal(false)} 
-                            onSave={(plan) => { setDailyPlan(plan); setShowPlanModal(false); }} 
-                        />
-                    )}
-
-                    {showLevelInfo && (
-                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowLevelInfo(false)}>
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
-                                    <h3 className="font-bold text-white text-lg">Din Nivå</h3>
-                                    <button onClick={() => setShowLevelInfo(false)} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
-                                </div>
-                                <div className="p-6 text-center">
-                                    <div className="inline-block p-4 rounded-full bg-yellow-500/10 border border-yellow-500/30 mb-4">
-                                        <span className="text-4xl font-black text-yellow-500">LVL {level}</span>
-                                    </div>
-                                    <p className="text-slate-400 text-sm mb-6">Du har <span className="text-white font-bold">{xp} XP</span> totalt.</p>
-                                    
-                                    <div className="bg-slate-800/50 rounded-xl p-4 mb-6 text-left">
-                                        <div className="flex justify-between text-xs mb-2">
-                                            <span className="text-slate-400">Nästa nivå</span>
-                                            <span className="text-white font-bold">{Math.round(xpProgress)} / {xpNeeded} XP</span>
-                                        </div>
-                                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                                            <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400" style={{width: `${progressPercent}%`}}></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3 text-left">
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hur får jag XP?</h4>
-                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
-                                            <span className="text-slate-300">Slutför uppgift</span>
-                                            <span className="text-yellow-500 font-bold">+50 XP</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
-                                            <span className="text-slate-300">Utför vana</span>
-                                            <span className="text-yellow-500 font-bold">+15 XP</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
-                                            <span className="text-slate-300">Fokuspass (lyckat)</span>
-                                            <span className="text-yellow-500 font-bold">+100 XP</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-4 border-t border-slate-800">
-                                    <button className="btn-primary w-full" onClick={() => setShowLevelInfo(false)}>Stäng</button>
                                 </div>
                             </div>
                         </div>
