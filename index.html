@@ -1072,7 +1072,7 @@
             }
 
             return (
-                <div className={`bg-gradient-to-br ${gradeBg} border border-white/10 rounded-2xl p-5 mb-6 relative overflow-hidden`}>
+                <div className={`bg-gradient-to-br ${gradeBg} border border-white/10 rounded-2xl p-5 mb-4 relative overflow-hidden`}>
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h3 className="text-white font-bold text-lg">Dagens Mål</h3>
@@ -1116,6 +1116,7 @@
             const [categoryFilter, setCategoryFilter] = useState('all');
             const [showGuide, setShowGuide] = useState(false);
             const [showPlanModal, setShowPlanModal] = useState(false);
+            const [showLevelInfo, setShowLevelInfo] = useState(false);
 
             const getGreeting = () => {
                 const h = new Date().getHours();
@@ -1257,7 +1258,7 @@
                         <div>
                             <h2 className="text-3xl font-bold text-white">{getGreeting()}</h2>
                             <div className="flex items-center gap-3 mt-1">
-                                <div className="bg-slate-900/60 border border-yellow-500/30 rounded-full pl-2 pr-3 py-0.5 flex items-center gap-2 backdrop-blur-sm">
+                                <div onClick={() => setShowLevelInfo(true)} className="bg-slate-900/60 border border-yellow-500/30 rounded-full pl-2 pr-3 py-0.5 flex items-center gap-2 backdrop-blur-sm cursor-pointer hover:bg-slate-800/80 transition-colors">
                                     <span className="text-yellow-500 font-black text-xs tracking-tighter">LVL {level}</span>
                                     <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
                                         <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-1000" style={{width: `${progressPercent}%`}}></div>
@@ -1284,7 +1285,7 @@
                     {!dailyPlan ? (
                         <div 
                             onClick={() => setShowPlanModal(true)}
-                            className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-6 mb-6 cursor-pointer hover:border-blue-400/50 transition-all active:scale-[0.98] group relative overflow-hidden"
+                            className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-5 mb-4 cursor-pointer hover:border-blue-400/50 transition-all active:scale-[0.98] group relative overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
                             <div className="relative z-10 flex items-center justify-between">
@@ -1299,7 +1300,7 @@
                         <DailyGoalWidget plan={dailyPlan} todos={todos} habits={habits} logs={logs} onStartTodo={onStartTodo} onStartHabit={onStartHabit} />
                     )}
 
-                    <div className="flex gap-3 overflow-x-auto pb-2 mb-6 no-scrollbar">
+                    <div className="flex gap-3 overflow-x-auto pb-2 mb-4 no-scrollbar">
                         <button 
                             onClick={() => setCategoryFilter('all')} 
                             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all border ${
@@ -1335,7 +1336,7 @@
                         })}
                     </div>
 
-                    {visibleWidgets.focus_stats && <div className="grid grid-cols-2 gap-4 mb-6">
+                    {visibleWidgets.focus_stats && <div className="grid grid-cols-2 gap-3 mb-3">
                         <div onClick={() => setStatsView('focus')} className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 p-4 rounded-2xl relative overflow-hidden cursor-pointer hover:border-blue-500/40 transition-all active:scale-95">
                             <div className="absolute top-0 right-0 p-2 opacity-10"><IconTimer /></div>
                             <div className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">Fokus</div>
@@ -1348,23 +1349,25 @@
                         </div>
                     </div>}
 
-                    {visibleWidgets.habit_stats && <div onClick={() => setStatsView('habits')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex justify-between items-center cursor-pointer hover:border-slate-700 transition-all">
-                        <div>
-                            <div className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-1">{timeRange === '24h' ? 'Vanor idag' : 'Vanor denna vecka'}</div>
+                    {visibleWidgets.habit_stats && <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div onClick={() => setStatsView('habits')} className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 p-4 rounded-2xl relative overflow-hidden cursor-pointer hover:border-purple-500/40 transition-all active:scale-95">
+                            <div className="absolute top-0 right-0 p-2 opacity-10"><IconGrid /></div>
+                            <div className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-1">{timeRange === '24h' ? 'Vanor' : 'Vecka'}</div>
                             <div className="text-2xl font-bold text-white">
                                 {timeRange === '24h' 
-                                    ? <>{habitStats.doneToday} <span className="text-slate-500 text-lg font-normal">/ {habitStats.totalActive}</span></>
-                                    : <>{habitStats.weeklyDone} <span className="text-slate-500 text-lg font-normal">/ {habitStats.weeklyTotal}</span></>
+                                    ? <>{habitStats.doneToday}<span className="text-purple-200/50 text-sm ml-1">/ {habitStats.totalActive}</span></>
+                                    : <>{habitStats.weeklyDone}<span className="text-purple-200/50 text-sm ml-1">/ {habitStats.weeklyTotal}</span></>
                                 }
                             </div>
                         </div>
-                        <div className="text-right">
-                            <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Streak</div>
-                            <div className="text-2xl font-bold text-white flex items-center justify-end gap-1">{habitStats.streak} <span className="text-lg">🔥</span></div>
+                        <div onClick={() => setStatsView('habits')} className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20 p-4 rounded-2xl relative overflow-hidden cursor-pointer hover:border-orange-500/40 transition-all active:scale-95">
+                            <div className="absolute top-0 right-0 p-2 opacity-10">🔥</div>
+                            <div className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-1">Streak</div>
+                            <div className="text-2xl font-bold text-white">{habitStats.streak} <span className="text-sm text-orange-200/50">dagar</span></div>
                         </div>
                     </div>}
 
-                    {visibleWidgets.graph && <div onClick={() => setStatsView('graph_details')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 cursor-pointer hover:border-slate-700 transition-all">
+                    {visibleWidgets.graph && <div onClick={() => setStatsView('graph_details')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4 cursor-pointer hover:border-slate-700 transition-all">
                         <div className="flex items-end justify-between h-16 gap-1">
                             {graphData.map((mins, i) => (
                                 <div key={i} className="flex-1 flex flex-col justify-end group relative h-full">
@@ -1376,7 +1379,7 @@
                     </div>}
 
                     {visibleWidgets.categories && totalCategoryTime > 0 && (
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex items-center gap-6">
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-6">
                             <div className="w-20 h-20 rounded-full flex-shrink-0 shadow-lg" style={{ background: catPieGradient }}></div>
                             <div className="flex-1 space-y-1">
                                 <h4 className="text-slate-400 text-xs uppercase font-bold mb-2 tracking-wider">Tid per kategori</h4>
@@ -1852,6 +1855,18 @@
                         "Tidslinje: Klicka på staplarna i tidsgrafen för att se exakt vad du gjorde vid en viss tidpunkt.",
                         "Logg: Scrolla längst ner för att se och hantera din historik."
                     ]} />}
+
+                    {showPlanModal && (
+                        <PlanSetupModal 
+                            todos={todos} 
+                            habits={habits} 
+                            onClose={() => setShowPlanModal(false)} 
+                            onSave={(newPlan) => {
+                                setDailyPlan(newPlan);
+                                setShowPlanModal(false);
+                            }} 
+                        />
+                    )}
                 </div>
             );
         };
@@ -2545,6 +2560,52 @@
                             onClose={() => setShowPlanModal(false)} 
                             onSave={(plan) => { setDailyPlan(plan); setShowPlanModal(false); }} 
                         />
+                    )}
+
+                    {showLevelInfo && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowLevelInfo(false)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                                    <h3 className="font-bold text-white text-lg">Din Nivå</h3>
+                                    <button onClick={() => setShowLevelInfo(false)} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
+                                </div>
+                                <div className="p-6 text-center">
+                                    <div className="inline-block p-4 rounded-full bg-yellow-500/10 border border-yellow-500/30 mb-4">
+                                        <span className="text-4xl font-black text-yellow-500">LVL {level}</span>
+                                    </div>
+                                    <p className="text-slate-400 text-sm mb-6">Du har <span className="text-white font-bold">{xp} XP</span> totalt.</p>
+                                    
+                                    <div className="bg-slate-800/50 rounded-xl p-4 mb-6 text-left">
+                                        <div className="flex justify-between text-xs mb-2">
+                                            <span className="text-slate-400">Nästa nivå</span>
+                                            <span className="text-white font-bold">{Math.round(xpProgress)} / {xpNeeded} XP</span>
+                                        </div>
+                                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                            <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400" style={{width: `${progressPercent}%`}}></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 text-left">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hur får jag XP?</h4>
+                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
+                                            <span className="text-slate-300">Slutför uppgift</span>
+                                            <span className="text-yellow-500 font-bold">+50 XP</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
+                                            <span className="text-slate-300">Utför vana</span>
+                                            <span className="text-yellow-500 font-bold">+15 XP</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
+                                            <span className="text-slate-300">Fokuspass (lyckat)</span>
+                                            <span className="text-yellow-500 font-bold">+100 XP</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t border-slate-800">
+                                    <button className="btn-primary w-full" onClick={() => setShowLevelInfo(false)}>Stäng</button>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             );
