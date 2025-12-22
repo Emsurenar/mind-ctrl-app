@@ -139,32 +139,20 @@
         }
         .animate-suck { animation: suck-in 0.5s ease-in forwards; pointer-events: none; }
 
-        /* Chaotic Smoke Animations */
-        @keyframes smoke-1 {
-            0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.2); }
-            33% { transform: translate3d(5%, 5%, 0) rotate(120deg) scale(1.4); }
-            66% { transform: translate3d(-5%, 10%, 0) rotate(240deg) scale(1); }
-            100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1.2); }
+        /* Simplified Fire Animation */
+        @keyframes fire-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        @keyframes smoke-2 {
-            0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-            50% { transform: translate3d(10%, -5%, 0) rotate(180deg) scale(1.3); }
-            100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1); }
+        .animate-fire-bg {
+            background: linear-gradient(270deg, #ff4500, #ff6347, #ff8c00, #ffa500, #ff6347, #ff4500);
+            background-size: 400% 400%;
+            animation: fire-flow 8s ease infinite;
         }
-        @keyframes smoke-3 {
-            0% { transform: translate3d(-5%, -5%, 0) rotate(0deg) scale(1.1); }
-            50% { transform: translate3d(5%, 5%, 0) rotate(-180deg) scale(1.4); }
-            100% { transform: translate3d(-5%, -5%, 0) rotate(-360deg) scale(1.1); }
-        }
-        
-        @keyframes fire-color-cycle {
-            0% { filter: hue-rotate(10deg) brightness(1.2) saturate(1.5); } /* Mer gul/ljus */
-            50% { filter: hue-rotate(-20deg) brightness(1) saturate(1.3); } /* Mer djup röd */
-            100% { filter: hue-rotate(10deg) brightness(1.2) saturate(1.5); } /* Tillbaka till gul/ljus */
-        }
-        .animate-smoke-1 { animation: smoke-1 20s infinite ease-in-out, fire-color-cycle 12s infinite ease-in-out; }
-        .animate-smoke-2 { animation: smoke-2 25s infinite ease-in-out, fire-color-cycle 12s infinite ease-in-out; }
-        .animate-smoke-3 { animation: smoke-3 30s infinite ease-in-out, fire-color-cycle 12s infinite ease-in-out; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -189,7 +177,7 @@
         // --- INLINE ICONS ---
         const IconTimer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
         const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
-        const IconList = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>;
+        const IconList = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>;
         const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
         const IconBell = () => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>;
         const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
@@ -207,9 +195,9 @@
         const IconMail = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>;
         const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
         const IconHelp = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
-        const IconBook = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v2H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v2H6.5A2.5 2.5 0 0 1 4 4.5z"/></svg>;
-        const IconBriefcase = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>;
-        const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+        const IconBook = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v2H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v2H6.5A2.5 2.5 0 0 1 4 4.5z"/></svg>;
+        const IconBriefcase = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>;
+        const IconUser = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
 
         // --- AUDIO HELPER (Syntetiskt ljud, inga filer behövs) ---
         const playBeep = () => {
@@ -315,6 +303,8 @@
             const [sessionBehaviors, setSessionBehaviors] = useState([]);
             const keepAliveAudioRef = useRef(null);
             const [showGuide, setShowGuide] = useState(false);
+            const [isAddingNote, setIsAddingNote] = useState(false);
+            const [currentNote, setCurrentNote] = useState('');
 
             // Städa upp keep-alive ljudet när vi lämnar 'running' state
             useEffect(() => {
@@ -486,6 +476,18 @@
                 }
             }
 
+            const handleAddNote = () => {
+                if (!currentNote.trim()) return;
+                const newNote = {
+                    behavior: currentNote, // Använder 'behavior' för att matcha befintlig logik
+                    created_at: new Date().toISOString()
+                };
+                setSessionBehaviors(prev => [...prev, newNote]);
+                setCurrentNote('');
+                setIsAddingNote(false);
+                vibrate(10);
+            };
+
             const saveSession = async () => {
                 const sessionLog = {
                     type: 'activity',
@@ -594,27 +596,54 @@
             if (state === 'running') {
                 const progress = ((initialDuration - remaining) / initialDuration) * 100;
                 return (
-                    <div className="flex flex-col h-full p-4 relative overflow-hidden bg-slate-950">
-                        {/* Organic Progress Background */}
-                        <div 
-                            className="absolute inset-0 transition-[clip-path] duration-1000 ease-linear z-0"
-                            style={{ clipPath: `inset(0 0 ${100 - progress}% 0)` }}
-                        >
-                            <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-orange-600/40 via-red-600/40 to-transparent animate-smoke-1 blur-3xl mix-blend-screen"></div>
-                            <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-gradient-to-tl from-yellow-500/30 via-orange-500/30 to-transparent animate-smoke-2 blur-3xl mix-blend-screen"></div>
-                            <div className="absolute inset-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-500/20 via-transparent to-transparent animate-smoke-3 blur-2xl mix-blend-plus-lighter"></div>
-                        </div>
+                    <>
+                        <div className="flex flex-col h-full p-4 relative overflow-hidden bg-slate-950">
+                            {/* Simplified Fire Progress Background */}
+                            <div 
+                                className="absolute inset-0 transition-[clip-path] duration-1000 ease-linear z-0"
+                                style={{ clipPath: `inset(0 0 ${100 - progress}% 0)` }}
+                            >
+                                <div className="absolute inset-0 animate-fire-bg"></div>
+                            </div>
 
-                        <div className="flex-1 flex flex-col items-center justify-center relative z-10">
-                            <div className="text-7xl font-mono font-bold text-white mb-8 tracking-tighter drop-shadow-lg">{formatTime(remaining)}</div>
-                            <div className="text-center mb-8 space-y-2 max-w-xs">
-                                <p className={`text-white font-bold drop-shadow-md ${data.challenges ? 'text-lg' : 'text-2xl'}`}>{data.goal}</p>
-                                {data.challenges && <p className="text-orange-200/80 text-sm drop-shadow-md">Utmaning: {data.challenges}</p>}
+                            <div className="flex-1 flex flex-col items-center justify-center relative z-10">
+                                <div className="text-7xl font-mono font-bold text-white mb-8 tracking-tighter drop-shadow-lg">{formatTime(remaining)}</div>
+                                <div className="text-center mb-8 space-y-2 max-w-xs">
+                                    <p className={`text-white font-bold drop-shadow-md ${data.challenges ? 'text-lg' : 'text-2xl'}`}>{data.goal}</p>
+                                    {data.challenges && <p className="text-orange-200/80 text-sm drop-shadow-md">Utmaning: {data.challenges}</p>}
+                                </div>
+                            </div>
+                            
+                            <div className="relative z-10 shrink-0">
+                                {sessionBehaviors.length > 0 && (
+                                    <div className="max-h-24 overflow-y-auto space-y-2 mb-4 no-scrollbar">
+                                        {sessionBehaviors.map((note, index) => (
+                                            <div key={index} className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-lg p-2 text-sm text-slate-300 animate-fade-in">
+                                                <p className="whitespace-pre-wrap">{note.behavior}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="flex gap-4">
+                                    <button className="text-slate-400 hover:text-white underline text-sm text-center flex-1" onClick={cancelSession}>Avbryt pass</button>
+                                    <button className="text-blue-400 hover:text-white underline text-sm font-bold text-center flex-1" onClick={() => setIsAddingNote(true)}>+ Lägg till anteckning</button>
+                                </div>
                             </div>
                         </div>
-                        
-                        <button className="text-slate-200/80 hover:text-white underline text-sm mt-4 text-center relative z-10" onClick={cancelSession}>Avbryt pass</button>
-                    </div>
+
+                        {isAddingNote && (
+                            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setIsAddingNote(false)}>
+                                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                                    <h3 className="text-xl font-bold mb-4 text-white">Ny anteckning</h3>
+                                    <textarea className="input-field min-h-[100px] resize-none !mb-4" placeholder="Skriv din tanke, idé eller distraktion..." autoFocus value={currentNote} onChange={e => setCurrentNote(e.target.value)} />
+                                    <div className="flex gap-2 mt-2">
+                                        <button onClick={() => setIsAddingNote(false)} className="btn-secondary">Avbryt</button>
+                                        <button onClick={handleAddNote} className="btn-primary">Spara anteckning</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 );
             }
 
@@ -1047,14 +1076,6 @@
                                 <button onClick={() => setTimeRange('24h')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '24h' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>24h</button>
                                 <button onClick={() => setTimeRange('7d')} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${timeRange === '7d' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>7d</button>
                             </div>
-                            <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-                                <button onClick={() => setCategoryFilter('all')} className={`px-2 py-1 rounded text-xs font-bold transition-colors ${categoryFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Allt</button>
-                                {Object.keys(categories).map(key => (
-                                    <button key={key} onClick={() => setCategoryFilter(key)} title={categories[key].label} className={`px-2 py-1 rounded transition-colors ${categoryFilter === key ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>
-                                        {React.cloneElement(categories[key].icon, {width: 16, height: 16})}
-                                    </button>
-                                ))}
-                            </div>
                             <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 <IconHelp />
                             </button>
@@ -1062,6 +1083,42 @@
                                 <IconSettings />
                             </button>
                         </div>
+                    </div>
+
+                    <div className="flex gap-3 overflow-x-auto pb-2 mb-6 no-scrollbar">
+                        <button 
+                            onClick={() => setCategoryFilter('all')} 
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all border ${
+                                categoryFilter === 'all' 
+                                ? 'bg-white text-slate-950 border-white shadow-lg shadow-white/10 scale-105' 
+                                : 'bg-slate-900/40 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-white hover:border-slate-700'
+                            }`}
+                        >
+                            <IconList width={16} height={16} />
+                            <span>Allt</span>
+                        </button>
+                        {Object.keys(categories).map(key => {
+                            const cat = categories[key];
+                            const isSelected = categoryFilter === key;
+                            const activeStyle = key === 'plugg' ? 'bg-blue-500 border-blue-400 text-white shadow-blue-500/25' :
+                                              key === 'jobb' ? 'bg-green-500 border-green-400 text-white shadow-green-500/25' :
+                                              'bg-purple-500 border-purple-400 text-white shadow-purple-500/25';
+                            
+                            return (
+                                <button 
+                                    key={key} 
+                                    onClick={() => setCategoryFilter(key)} 
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all border shadow-lg ${
+                                        isSelected 
+                                        ? `${activeStyle} scale-105` 
+                                        : 'bg-slate-900/40 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-white hover:border-slate-700 shadow-black/20'
+                                    }`}
+                                >
+                                    {React.cloneElement(cat.icon, { width: 16, height: 16, className: isSelected ? 'text-white' : cat.color })}
+                                    <span>{cat.label}</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-6">
@@ -1232,13 +1289,13 @@
 
                                             {selectedLog.data.behaviors && selectedLog.data.behaviors.length > 0 && (
                                                 <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-800">
-                                                    <p className="text-slate-400 text-xs font-bold uppercase mb-3">Loggade beteenden</p>
+                                                    <p className="text-slate-400 text-xs font-bold uppercase mb-3">Anteckningar under passet</p>
                                                     <div className="space-y-3 relative before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-700">
                                                         {selectedLog.data.behaviors.map((b, i) => (
                                                             <div key={i} className="flex items-start gap-3 relative pl-1">
                                                                 <div className="w-2.5 h-2.5 rounded-full bg-slate-600 border-2 border-slate-900 mt-1 z-10 shrink-0"></div>
                                                                 <div>
-                                                                    <p className="text-slate-200 text-sm font-medium">{b.behavior}</p>
+                                                                    <p className="text-slate-200 text-sm font-medium whitespace-pre-wrap">{b.behavior}</p>
                                                                     <p className="text-slate-500 text-xs">{new Date(b.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                                                 </div>
                                                             </div>
@@ -1658,7 +1715,7 @@
                                 }}
                                 className={`bg-slate-900/50 border-l-4 ${TODO_PRIORITIES[t.priority]?.colors || ''} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer ${animatingId === t.id ? 'animate-suck' : ''}`}>
                                 <div className="flex items-center gap-3">
-                                    {categories[t.category] && React.cloneElement(categories[t.category].icon, { className: 'w-5 h-5 text-slate-500 flex-shrink-0' })}
+                                    {categories[t.category] && React.cloneElement(categories[t.category].icon, { className: `w-5 h-5 ${categories[t.category].color} flex-shrink-0` })}
                                     <div>
                                     <h3 className="font-bold text-lg text-white">{t.desc}</h3>
                                     <div className="flex gap-3 text-xs text-slate-400 mt-1">
@@ -1970,7 +2027,7 @@
                                         <button onClick={async () => {
                                             await saveHabitEdit(editingHabit);
                                             setEditingHabit(null);
-                                        }} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600 flex-1">Spara</button>
+                                        }} className="bg-green-900/20 hover:bg-green-900/40 text-green-400 font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 flex-1">Spara</button>
                                     </div>
                                 </div>
                             </div>
