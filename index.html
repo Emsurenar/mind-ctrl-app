@@ -294,7 +294,7 @@
         );
 
         // 1. Aktivitetstimer (Uppdaterad med Nedräkning & Alarm)
-        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById, showToast }) => {
+        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById, showToast, addXp }) => {
             const [state, setState] = useState('setup'); // setup, running, alarm, review
             const [remaining, setRemaining] = useState(0);
             const [targetTime, setTargetTime] = useState(null);
@@ -476,6 +476,22 @@
                 }
             }
 
+            const finishEarly = () => {
+                if(confirm("Vill du avsluta passet i förtid?")) {
+                    const elapsed = initialDuration - remaining;
+                    setInitialDuration(elapsed);
+                    setRemaining(0);
+                    setState('review');
+                }
+            };
+
+            const adjustTime = (minutes) => {
+                setTargetTime(prev => prev + (minutes * 60 * 1000));
+                setInitialDuration(prev => Math.max(60, prev + (minutes * 60)));
+                setRemaining(prev => Math.max(0, prev + (minutes * 60)));
+                vibrate(20);
+            };
+
             const handleAddNote = () => {
                 if (!currentNote.trim()) return;
                 const newNote = {
@@ -500,16 +516,27 @@
                 };
                 await saveLog(sessionLog);
 
+                if (review.success) {
+                    addXp(100);
+                }
+
                 if (review.success && data.originTodoId) {
                     await saveLog({ 
                         type: 'todo_done', 
-                        data: { desc: data.goal, minutes: data.durationMinutes, priority: data.priority || 'medium', category: data.category } 
+                        data: { desc: data.goal, minutes: Math.round(initialDuration / 60), priority: data.priority || 'medium', category: data.category, originTodoId: data.originTodoId } 
                     });
                     await deleteTodoById(data.originTodoId);
                 }
 
+                if (review.success && data.originHabitId) {
+                    await saveLog({ 
+                        type: 'habit_done', 
+                        data: { habitId: data.originHabitId, name: data.goal } 
+                    });
+                }
+
                 setState('setup');
-                setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt' });
+                setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt', details: '' });
                 setSessionBehaviors([]);
                 showToast("Pass sparat!", "success");
                 vibrate([50, 50, 50]);
@@ -611,10 +638,22 @@
                             </div>
 
                             <div className="flex-1 flex flex-col items-center justify-center relative z-10">
-                                <div className="text-7xl font-mono font-bold text-white mb-8 tracking-tighter drop-shadow-lg">{formatTime(remaining)}</div>
-                                <div className="text-center mb-8 space-y-2 max-w-xs">
-                                    <p className={`text-white font-bold drop-shadow-md ${data.challenges ? 'text-lg' : 'text-2xl'}`}>{data.goal}</p>
+                                <div className="flex flex-col items-center">
+                                    <div className="text-7xl font-mono font-bold text-white mb-2 tracking-tighter drop-shadow-lg">{formatTime(remaining)}</div>
+                                    <div className="flex gap-3 mb-6">
+                                        <button onClick={() => adjustTime(-5)} className="px-3 py-1 rounded-full bg-slate-800/40 hover:bg-slate-700/60 text-slate-300 text-xs font-bold border border-slate-700/50 transition-all active:scale-95">-5m</button>
+                                        <button onClick={() => adjustTime(5)} className="px-3 py-1 rounded-full bg-slate-800/40 hover:bg-slate-700/60 text-slate-300 text-xs font-bold border border-slate-700/50 transition-all active:scale-95">+5m</button>
+                                    </div>
+                                </div>
+                                <div className="text-center mb-8 space-y-4 max-w-xs">
+                                    <p className={`text-white font-bold drop-shadow-md ${data.challenges || data.details ? 'text-lg' : 'text-2xl'}`}>{data.goal}</p>
                                     {data.challenges && <p className="text-orange-200/80 text-sm drop-shadow-md">Utmaning: {data.challenges}</p>}
+                                    {data.details && (
+                                        <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-3 text-left text-sm text-slate-300 backdrop-blur-sm">
+                                            <p className="text-slate-400 text-xs font-bold uppercase mb-1">Anteckning från To-do:</p>
+                                            <p className="whitespace-pre-wrap">{data.details}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             
@@ -628,9 +667,14 @@
                                         ))}
                                     </div>
                                 )}
-                                <div className="flex gap-4">
-                                    <button className="text-slate-400 hover:text-white underline text-sm text-center flex-1" onClick={cancelSession}>Avbryt pass</button>
-                                    <button className="text-blue-400 hover:text-white underline text-sm font-bold text-center flex-1" onClick={() => setIsAddingNote(true)}>+ Lägg till anteckning</button>
+                                <div className="flex flex-col gap-3">
+                                    <button className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2" onClick={() => setIsAddingNote(true)}>
+                                        <IconPlus width={18} height={18} /> Lägg till anteckning
+                                    </button>
+                                    <div className="flex gap-3">
+                                        <button className="flex-1 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm border border-transparent hover:border-slate-700" onClick={cancelSession}>Avbryt</button>
+                                        <button className="flex-1 py-3 rounded-xl font-bold text-blue-400 hover:text-white hover:bg-blue-900/20 transition-colors text-sm border border-transparent hover:border-blue-500/30" onClick={finishEarly}>Avsluta</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -665,7 +709,7 @@
             if (state === 'review') return (
                 <div className="p-4 space-y-4 text-center">
                     <h2 className="text-xl font-bold">Bra jobbat!</h2>
-                    <p className="text-slate-400">Du fokuserade i {data.durationMinutes} minuter.</p>
+                    <p className="text-slate-400">Du fokuserade i {Math.round(initialDuration / 60)} minuter.</p>
                     <div className="space-y-2">
                         <p>Uppnådde du målet?</p>
                         <div className="flex gap-2">
@@ -683,7 +727,7 @@
                     <button className="btn-primary" onClick={saveSession}>Spara till Logg</button>
                     <button className="text-slate-400 hover:text-white text-sm mt-4 underline block w-full" onClick={() => {
                         setState('setup');
-                        setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25 });
+                        setData({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt', details: '' });
                         setSessionBehaviors([]);
                     }}>Spara inte</button>
                 </div>
@@ -910,14 +954,168 @@
             );
         };
 
+        // --- NY KOMPONENT: PlanSetupModal ---
+        const PlanSetupModal = ({ todos, habits, onSave, onClose }) => {
+            const [selectedTodoIds, setSelectedTodoIds] = useState([]);
+            const [selectedHabitIds, setSelectedHabitIds] = useState([]);
+
+            const toggleTodo = (id) => {
+                setSelectedTodoIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+            };
+
+            const toggleHabit = (id) => {
+                setSelectedHabitIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+            };
+
+            const handleSave = () => {
+                onSave({
+                    date: new Date().toISOString().split('T')[0],
+                    todoIds: selectedTodoIds,
+                    habitIds: selectedHabitIds
+                });
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={onClose}>
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                            <h3 className="font-bold text-white text-lg">Sätt mål för dagen</h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
+                        </div>
+                        <div className="p-4 overflow-y-auto space-y-6">
+                            <div>
+                                <h4 className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-3">Välj Vanor</h4>
+                                <div className="space-y-2">
+                                    {habits.length === 0 && <p className="text-slate-500 text-sm italic">Inga vanor skapade.</p>}
+                                    {habits.map(h => (
+                                        <div key={h.id} onClick={() => toggleHabit(h.id)} className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${selectedHabitIds.includes(h.id) ? 'bg-purple-900/20 border-purple-500/50' : 'bg-slate-800/30 border-slate-800'}`}>
+                                            <span className="text-white text-sm font-medium">{h.name}</span>
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${selectedHabitIds.includes(h.id) ? 'bg-purple-500 border-purple-500' : 'border-slate-600'}`}>
+                                                {selectedHabitIds.includes(h.id) && <IconCheck width={14} height={14} className="text-white" />}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-3">Välj Uppgifter</h4>
+                                <div className="space-y-2">
+                                    {todos.length === 0 && <p className="text-slate-500 text-sm italic">Inga uppgifter i listan.</p>}
+                                    {todos.map(t => (
+                                        <div key={t.id} onClick={() => toggleTodo(t.id)} className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${selectedTodoIds.includes(t.id) ? 'bg-blue-900/20 border-blue-500/50' : 'bg-slate-800/30 border-slate-800'}`}>
+                                            <span className="text-white text-sm font-medium truncate pr-2">{t.desc}</span>
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${selectedTodoIds.includes(t.id) ? 'bg-blue-500 border-blue-500' : 'border-slate-600'}`}>
+                                                {selectedTodoIds.includes(t.id) && <IconCheck width={14} height={14} className="text-white" />}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-800 mt-auto">
+                            <button disabled={selectedTodoIds.length === 0 && selectedHabitIds.length === 0} onClick={handleSave} className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">Spara Mål</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NY KOMPONENT: DailyGoalWidget ---
+        const DailyGoalWidget = ({ plan, todos, habits, logs, onStartTodo, onStartHabit }) => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            // Beräkna progress
+            const doneHabitIds = logs
+                .filter(l => l.type === 'habit_done' && l.created_at.startsWith(todayStr))
+                .map(l => l.data.habitId);
+            
+            const doneTodoIds = logs
+                .filter(l => l.type === 'todo_done' && l.created_at.startsWith(todayStr))
+                .map(l => l.data.originTodoId);
+
+            const completedHabitsCount = plan.habitIds.filter(id => doneHabitIds.includes(id)).length;
+            const completedTodosCount = plan.todoIds.filter(id => doneTodoIds.includes(id)).length;
+            
+            const totalItems = plan.habitIds.length + plan.todoIds.length;
+            const totalCompleted = completedHabitsCount + completedTodosCount;
+            const progress = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
+
+            // Betyg
+            let grade = 'F';
+            let gradeColor = 'text-slate-500';
+            let gradeBg = 'from-slate-500/20 to-slate-600/5';
+            if (progress >= 100) { grade = 'A+'; gradeColor = 'text-green-400'; gradeBg = 'from-green-500/20 to-green-600/5'; }
+            else if (progress >= 90) { grade = 'A'; gradeColor = 'text-green-400'; gradeBg = 'from-green-500/20 to-green-600/5'; }
+            else if (progress >= 75) { grade = 'B'; gradeColor = 'text-blue-400'; gradeBg = 'from-blue-500/20 to-blue-600/5'; }
+            else if (progress >= 50) { grade = 'C'; gradeColor = 'text-yellow-400'; gradeBg = 'from-yellow-500/20 to-yellow-600/5'; }
+            else if (progress >= 25) { grade = 'D'; gradeColor = 'text-orange-400'; gradeBg = 'from-orange-500/20 to-orange-600/5'; }
+
+            // Rekommendation (Nästa steg)
+            let nextItem = null;
+            let nextType = null;
+
+            // Kolla vanor först
+            if (!nextItem) {
+                const nextHabitId = plan.habitIds.find(id => !doneHabitIds.includes(id));
+                if (nextHabitId) {
+                    nextItem = habits.find(h => h.id === nextHabitId);
+                    nextType = 'habit';
+                }
+            }
+            // Sen uppgifter
+            if (!nextItem) {
+                const nextTodoId = plan.todoIds.find(id => !doneTodoIds.includes(id));
+                if (nextTodoId) {
+                    nextItem = todos.find(t => t.id === nextTodoId);
+                    nextType = 'todo';
+                }
+            }
+
+            return (
+                <div className={`bg-gradient-to-br ${gradeBg} border border-white/10 rounded-2xl p-5 mb-6 relative overflow-hidden`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 className="text-white font-bold text-lg">Dagens Mål</h3>
+                            <p className="text-slate-400 text-xs">{totalCompleted} av {totalItems} klara</p>
+                        </div>
+                        <div className={`text-4xl font-black ${gradeColor} drop-shadow-lg`}>{grade}</div>
+                    </div>
+                    
+                    <div className="h-2 w-full bg-slate-900/50 rounded-full mb-4 overflow-hidden">
+                        <div className={`h-full transition-all duration-1000 ease-out ${progress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{width: `${progress}%`}}></div>
+                    </div>
+
+                    {nextItem ? (
+                        <div className="bg-slate-900/60 rounded-xl p-3 flex items-center justify-between border border-white/5">
+                            <div className="overflow-hidden mr-3">
+                                <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Nästa steg</p>
+                                <p className="text-white font-medium truncate">{nextType === 'habit' ? nextItem.name : nextItem.desc}</p>
+                            </div>
+                            <button 
+                                onClick={() => nextType === 'habit' ? onStartHabit(nextItem) : onStartTodo(nextItem)}
+                                className="bg-white text-slate-900 p-2 rounded-lg hover:bg-blue-50 transition-colors shadow-lg active:scale-95"
+                            >
+                                <IconPlay width={16} height={16} className="fill-current" />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-green-900/20 rounded-xl p-3 flex items-center justify-center border border-green-500/20">
+                            <p className="text-green-400 font-bold text-sm flex items-center gap-2"><IconCheck width={16} height={16} /> Alla mål klara!</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // 3. Dashboard (Start/Huvudfönster)
-        const Dashboard = ({ onOpenSettings, logs, habits, deleteLog }) => {
+        const Dashboard = ({ onOpenSettings, logs, habits, todos, deleteLog, visibleWidgets, dailyPlan, setDailyPlan, onStartTodo, onStartHabit, xp }) => {
             const [selectedLog, setSelectedLog] = useState(null);
             const [timeRange, setTimeRange] = useState('24h');
             const [statsView, setStatsView] = useState(null);
             const [selectedGraphBarIndex, setSelectedGraphBarIndex] = useState(null);
             const [categoryFilter, setCategoryFilter] = useState('all');
             const [showGuide, setShowGuide] = useState(false);
+            const [showPlanModal, setShowPlanModal] = useState(false);
 
             const getGreeting = () => {
                 const h = new Date().getHours();
@@ -1045,12 +1243,28 @@
                 return { catPieSegments, catPieGradient, totalCategoryTime };
             }, [recentActivity]);
 
+            // Level Calculation
+            const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+            const xpForCurrentLevel = 100 * Math.pow(level - 1, 2);
+            const xpForNextLevel = 100 * Math.pow(level, 2);
+            const xpProgress = xp - xpForCurrentLevel;
+            const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+            const progressPercent = Math.min(100, Math.max(0, (xpProgress / xpNeeded) * 100));
+
             return (
                 <div className={`p-4 flex flex-col ${getBackgroundGradient()}`}>
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h2 className="text-3xl font-bold text-white">{getGreeting()}</h2>
-                            <p className="text-slate-400 text-sm capitalize">{new Date().toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                                <div className="bg-slate-900/60 border border-yellow-500/30 rounded-full pl-2 pr-3 py-0.5 flex items-center gap-2 backdrop-blur-sm">
+                                    <span className="text-yellow-500 font-black text-xs tracking-tighter">LVL {level}</span>
+                                    <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+                                        <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-1000" style={{width: `${progressPercent}%`}}></div>
+                                    </div>
+                                </div>
+                                <p className="text-slate-400 text-xs capitalize">{new Date().toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
@@ -1065,6 +1279,25 @@
                             </button>
                         </div>
                     </div>
+
+                    {/* Daily Goal Section */}
+                    {!dailyPlan ? (
+                        <div 
+                            onClick={() => setShowPlanModal(true)}
+                            className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-6 mb-6 cursor-pointer hover:border-blue-400/50 transition-all active:scale-[0.98] group relative overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
+                            <div className="relative z-10 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-1">Sätt mål för dagen</h3>
+                                    <p className="text-blue-200 text-sm">Planera dina vanor och uppgifter.</p>
+                                </div>
+                                <div className="bg-blue-500 p-3 rounded-full text-white shadow-lg shadow-blue-900/50 group-hover:scale-110 transition-transform"><IconPlus /></div>
+                            </div>
+                        </div>
+                    ) : (
+                        <DailyGoalWidget plan={dailyPlan} todos={todos} habits={habits} logs={logs} onStartTodo={onStartTodo} onStartHabit={onStartHabit} />
+                    )}
 
                     <div className="flex gap-3 overflow-x-auto pb-2 mb-6 no-scrollbar">
                         <button 
@@ -1102,7 +1335,7 @@
                         })}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    {visibleWidgets.focus_stats && <div className="grid grid-cols-2 gap-4 mb-6">
                         <div onClick={() => setStatsView('focus')} className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 p-4 rounded-2xl relative overflow-hidden cursor-pointer hover:border-blue-500/40 transition-all active:scale-95">
                             <div className="absolute top-0 right-0 p-2 opacity-10"><IconTimer /></div>
                             <div className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">Fokus</div>
@@ -1113,9 +1346,9 @@
                             <div className="text-green-400 text-xs font-bold uppercase tracking-wider mb-1">Uppgifter</div>
                             <div className="text-3xl font-bold text-white">{totalTodos}<span className="text-sm font-normal text-green-200/50 ml-1">st</span></div>
                         </div>
-                    </div>
+                    </div>}
 
-                    <div onClick={() => setStatsView('habits')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex justify-between items-center cursor-pointer hover:border-slate-700 transition-all">
+                    {visibleWidgets.habit_stats && <div onClick={() => setStatsView('habits')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex justify-between items-center cursor-pointer hover:border-slate-700 transition-all">
                         <div>
                             <div className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-1">{timeRange === '24h' ? 'Vanor idag' : 'Vanor denna vecka'}</div>
                             <div className="text-2xl font-bold text-white">
@@ -1129,9 +1362,9 @@
                             <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Streak</div>
                             <div className="text-2xl font-bold text-white flex items-center justify-end gap-1">{habitStats.streak} <span className="text-lg">🔥</span></div>
                         </div>
-                    </div>
+                    </div>}
 
-                    <div onClick={() => setStatsView('graph_details')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 cursor-pointer hover:border-slate-700 transition-all">
+                    {visibleWidgets.graph && <div onClick={() => setStatsView('graph_details')} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 cursor-pointer hover:border-slate-700 transition-all">
                         <div className="flex items-end justify-between h-16 gap-1">
                             {graphData.map((mins, i) => (
                                 <div key={i} className="flex-1 flex flex-col justify-end group relative h-full">
@@ -1140,9 +1373,9 @@
                             ))}
                         </div>
                         <div className="flex justify-between text-[10px] text-slate-500 mt-2 px-1 font-mono">{graphLabels.map((l, i) => <span key={i} className="capitalize">{l}</span>)}</div>
-                    </div>
+                    </div>}
 
-                    {totalCategoryTime > 0 && (
+                    {visibleWidgets.categories && totalCategoryTime > 0 && (
                         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex items-center gap-6">
                             <div className="w-20 h-20 rounded-full flex-shrink-0 shadow-lg" style={{ background: catPieGradient }}></div>
                             <div className="flex-1 space-y-1">
@@ -1157,7 +1390,7 @@
                         </div>
                     )}
 
-                    <div className="flex flex-col">
+                    {visibleWidgets.recent_activity && <div className="flex flex-col">
                         <h3 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider text-left">Senaste händelser</h3>
                         <div className="space-y-2 pr-1">
                             {filteredLogs.filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 20).map((l) => (
@@ -1182,7 +1415,7 @@
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </div>}
 
                     {selectedLog && (
                         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setSelectedLog(null)}>
@@ -1623,14 +1856,106 @@
             );
         };
 
+        // --- NY KOMPONENT: SwipeableTodoItem ---
+        const SwipeableTodoItem = ({ todo, onStart, onComplete, onDelete, onEdit, onView, animatingId }) => {
+            const [translateX, setTranslateX] = useState(0);
+            const [isSwiping, setIsSwiping] = useState(false);
+            const startX = useRef(null);
+            const longPressTimer = useRef(null);
+            const isLongPress = useRef(false);
+
+            const handleTouchStart = (e) => {
+                if (e.target.closest('button')) return;
+                startX.current = e.touches[0].clientX;
+                setIsSwiping(true);
+                
+                isLongPress.current = false;
+                longPressTimer.current = setTimeout(() => {
+                    isLongPress.current = true;
+                    onEdit(todo);
+                    setIsSwiping(false);
+                    setTranslateX(0);
+                    vibrate(20);
+                }, 500);
+            };
+
+            const handleTouchMove = (e) => {
+                if (!startX.current || !isSwiping) return;
+                const currentX = e.touches[0].clientX;
+                const diff = currentX - startX.current;
+                
+                if (Math.abs(diff) > 10) {
+                    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                }
+                setTranslateX(diff);
+            };
+
+            const handleTouchEnd = () => {
+                if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                setIsSwiping(false);
+                startX.current = null;
+
+                const threshold = 100;
+                if (translateX > threshold) {
+                    setTranslateX(window.innerWidth); 
+                    setTimeout(() => onComplete(todo, true), 200);
+                } else if (translateX < -threshold) {
+                    setTranslateX(-window.innerWidth);
+                    setTimeout(() => onDelete(todo.id), 200);
+                } else {
+                    setTranslateX(0);
+                }
+            };
+
+            const handleClick = (e) => {
+                if (e.target.closest('button')) return;
+                if (!isLongPress.current && Math.abs(translateX) < 5) {
+                    onView(todo);
+                }
+            };
+
+            return (
+                <div className="relative mb-3 select-none rounded-xl overflow-hidden h-full">
+                    <div className={`absolute inset-0 flex items-center justify-start pl-6 transition-all duration-300 ${translateX > 0 ? 'bg-green-600 opacity-100' : 'bg-slate-800 opacity-0'}`}>
+                        <IconCheck className="text-white w-8 h-8" />
+                    </div>
+                    <div className={`absolute inset-0 flex items-center justify-end pr-6 transition-all duration-300 ${translateX < 0 ? 'bg-red-600 opacity-100' : 'bg-slate-800 opacity-0'}`}>
+                        <IconTrash className="text-white w-8 h-8" />
+                    </div>
+                    <div 
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onClick={handleClick}
+                        style={{ transform: `translateX(${translateX}px)`, transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+                        className={`relative bg-slate-900/90 border-l-4 ${TODO_PRIORITIES[todo.priority]?.colors || ''} p-4 flex justify-between items-center border-y border-r border-slate-800/50 backdrop-blur-sm ${animatingId === todo.id ? 'animate-suck' : ''}`}
+                    >
+                        <div className="flex items-center gap-3 pointer-events-none">
+                             {categories[todo.category] && React.cloneElement(categories[todo.category].icon, { className: `w-5 h-5 ${categories[todo.category].color} flex-shrink-0` })}
+                             <div>
+                                <h3 className="font-bold text-lg text-white">{todo.desc}</h3>
+                                <div className="flex gap-3 text-xs text-slate-400 mt-1">
+                                    <span className="flex items-center gap-1">{todo.minutes} min</span>
+                                    <span className="uppercase font-bold tracking-wider self-center px-2 py-0.5 rounded bg-slate-800">{TODO_PRIORITIES[todo.priority]?.label}</span>
+                                </div>
+                             </div>
+                        </div>
+                        <div className="flex items-center">
+                            <button onClick={(e) => { e.stopPropagation(); onStart(todo); }} className="text-slate-400 hover:text-blue-400 p-2 transition-colors"><IconPlay /></button>
+                            <button onClick={(e) => { e.stopPropagation(); onComplete(todo, false); }} className="text-slate-400 hover:text-green-400 p-2 transition-colors"><IconCheck /></button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(todo.id); }} className="text-slate-400 hover:text-red-400 p-2 transition-colors"><IconTrash /></button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // 4. To-do List
-        const TodoList = ({ todos, onStartTodo, addTodo, completeTodo, deleteTodo, saveTodoEdit, showToast }) => {
+        const TodoList = ({ todos, onStartTodo, addTodo, completeTodo, deleteTodo, saveTodoEdit, showToast, addXp }) => {
             const [newTodo, setNewTodo] = useState({ desc: '', minutes: '', priority: 'medium', details: '', category: 'personligt' });
             const [isAdding, setIsAdding] = useState(false);
             const [editingTodo, setEditingTodo] = useState(null);
             const [viewingTodo, setViewingTodo] = useState(null);
-            const longPressTimer = useRef(null);
-            const isLongPress = useRef(false);
             const [showGuide, setShowGuide] = useState(false);
             const [animatingId, setAnimatingId] = useState(null);
 
@@ -1642,27 +1967,18 @@
                 });
             }, [todos]);
 
-            const handleLongPressStart = (e, todo) => {
-                if (e.target.closest('button')) return; // Ignorera om man klickar på knappar
-                isLongPress.current = false;
-                longPressTimer.current = setTimeout(() => {
-                    isLongPress.current = true;
-                    setEditingTodo(todo);
-                }, 500);
-            };
-
-            const handleLongPressEnd = () => {
-                if (longPressTimer.current) clearTimeout(longPressTimer.current);
-            };
-
-            const handleComplete = (e, todo) => {
-                e.stopPropagation();
-                setAnimatingId(todo.id);
-                setTimeout(async () => {
-                    await completeTodo(todo);
-                    vibrate([10, 30]);
-                    setAnimatingId(null);
-                }, 500);
+            const handleComplete = (todo, fromSwipe = false) => {
+                if (fromSwipe) {
+                    completeTodo(todo).then(() => { addXp(50); vibrate([10, 30]); });
+                } else {
+                    setAnimatingId(todo.id);
+                    setTimeout(async () => {
+                        await completeTodo(todo);
+                        addXp(50);
+                        vibrate([10, 30]);
+                        setAnimatingId(null);
+                    }, 500);
+                }
             };
 
             return (
@@ -1675,35 +1991,16 @@
                     <div className="flex-1 overflow-y-auto space-y-3 pb-20">
                         {todos.length === 0 && <p className="text-center text-slate-500 mt-10 text-sm">Inget att göra.</p>}
                         {sortedTodos.map(t => (
-                            <div 
+                            <SwipeableTodoItem 
                                 key={t.id} 
-                                onMouseDown={(e) => handleLongPressStart(e, t)}
-                                onMouseUp={handleLongPressEnd}
-                                onMouseLeave={handleLongPressEnd}
-                                onTouchStart={(e) => handleLongPressStart(e, t)}
-                                onTouchEnd={handleLongPressEnd}
-                                onTouchMove={handleLongPressEnd}
-                                onClick={(e) => {
-                                    if (e.target.closest('button')) return;
-                                    if (!isLongPress.current) setViewingTodo(t);
-                                }}
-                                className={`bg-slate-900/50 border-l-4 ${TODO_PRIORITIES[t.priority]?.colors || ''} rounded-r-xl p-4 flex justify-between items-center border-y border-r border-slate-800/50 select-none active:scale-[0.99] transition-transform cursor-pointer ${animatingId === t.id ? 'animate-suck' : ''}`}>
-                                <div className="flex items-center gap-3">
-                                    {categories[t.category] && React.cloneElement(categories[t.category].icon, { className: `w-5 h-5 ${categories[t.category].color} flex-shrink-0` })}
-                                    <div>
-                                    <h3 className="font-bold text-lg text-white">{t.desc}</h3>
-                                    <div className="flex gap-3 text-xs text-slate-400 mt-1">
-                                        <span className="flex items-center gap-1">{t.minutes} min</span>
-                                        <span className="uppercase font-bold tracking-wider self-center px-2 py-0.5 rounded bg-slate-800">{TODO_PRIORITIES[t.priority]?.label}</span>
-                                    </div>
-                                </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <button onClick={(e) => { e.stopPropagation(); onStartTodo(t); }} className="text-slate-400 hover:text-blue-400 p-2 transition-colors" title="Starta"><IconPlay /></button>
-                                    <button onClick={(e) => handleComplete(e, t)} className="text-slate-400 hover:text-green-400 p-2 transition-colors" title="Klar"><IconCheck /></button>
-                                    <button onClick={(e) => { e.stopPropagation(); deleteTodo(t.id); }} className="text-slate-400 hover:text-red-400 p-2 transition-colors"><IconTrash /></button>
-                                </div>
-                            </div>
+                                todo={t} 
+                                onStart={onStartTodo} 
+                                onComplete={handleComplete} 
+                                onDelete={deleteTodo} 
+                                onEdit={setEditingTodo} 
+                                onView={setViewingTodo} 
+                                animatingId={animatingId} 
+                            />
                         ))}
                     </div>
 
@@ -1811,7 +2108,7 @@
         };
 
         // 5. Habit Tracker
-        const HabitTracker = ({ habits, logs, addHabit, toggleHabit, saveHabitEdit, deleteHabit, showToast }) => {
+        const HabitTracker = ({ habits, logs, addHabit, toggleHabit, saveHabitEdit, deleteHabit, onStartHabit, showToast, addXp }) => {
             const [newHabit, setNewHabit] = useState('');
             const [isAdding, setIsAdding] = useState(false);
             const [editingHabit, setEditingHabit] = useState(null);
@@ -1835,6 +2132,12 @@
 
             const handleHabitClick = (habitId) => {
                 if (isLongPress.current) return;
+                
+                const isCompleted = habitsWithStatus.find(h => h.id === habitId)?.completed;
+                if (!isCompleted) {
+                    addXp(15);
+                }
+
                 toggleHabit(habitId);
                 vibrate(20);
             };
@@ -1911,9 +2214,19 @@
                                         const cells = [];
                                         for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`}></div>);
                                         for (let i = 1; i <= daysInMonth; i++) {
-                                            const dateStr = new Date(year, month, i).toISOString().split('T')[0];
-                                            const doneCount = logs.filter(l => l.type === 'habit_done' && l.created_at.startsWith(dateStr)).length;
-                                            const isToday = dateStr === getTodayString();
+                                            const d = new Date(year, month, i);
+                                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                            
+                                            const doneCount = logs.filter(l => {
+                                                if (l.type !== 'habit_done') return false;
+                                                const logDate = new Date(l.created_at);
+                                                const logDateStr = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
+                                                return logDateStr === dateStr;
+                                            }).length;
+
+                                            const today = new Date();
+                                            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                                            const isToday = dateStr === todayStr;
                                             
                                             let bgClass = 'bg-slate-900/50 border-slate-800 text-slate-500';
                                             if (doneCount > 0) bgClass = 'bg-green-900/30 border-green-500/30 text-green-400';
@@ -1992,6 +2305,12 @@
                                             onChange={e => setEditingHabit({...editingHabit, name: e.target.value})}
                                         />
                                     </div>
+                                    <button onClick={() => {
+                                        onStartHabit(editingHabit);
+                                        setEditingHabit(null);
+                                    }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl mb-3 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-blue-900/20">
+                                        <IconPlay width={18} height={18} /> Starta pass
+                                    </button>
                                     <div className="flex gap-2">
                                         <button onClick={() => setEditingHabit(null)} className="btn-secondary flex-1">Avbryt</button>
                                         <button onClick={async () => {
@@ -2020,11 +2339,20 @@
             );
         };
 
-        const Settings = ({ theme, setTheme, onBack, showToast }) => {
+        const Settings = ({ theme, setTheme, onBack, showToast, visibleWidgets, toggleWidget }) => {
             const [showPasswordModal, setShowPasswordModal] = useState(false);
+            const [showWidgetModal, setShowWidgetModal] = useState(false);
             const [showGuide, setShowGuide] = useState(false);
             const [newPassword, setNewPassword] = useState('');
             const [loading, setLoading] = useState(false);
+
+            const widgetLabels = {
+                focus_stats: 'Fokus & Uppgifter',
+                habit_stats: 'Vanor & Streak',
+                graph: 'Tidsgraf',
+                categories: 'Kategorifördelning',
+                recent_activity: 'Senaste händelser'
+            };
 
             const handleChangePassword = async () => {
                 if (newPassword.length < 6) {
@@ -2068,6 +2396,17 @@
                                 {theme === 'dark' ? 'Byt till Light Mode' : 'Byt till Dark Mode'}
                             </button>
                         </div>
+                    </div>
+
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-slate-800 rounded-lg text-orange-400"><IconGrid /></div>
+                            <span className="text-white font-bold text-lg">Startskärm</span>
+                        </div>
+                        <button onClick={() => setShowWidgetModal(true)} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg transition-colors border border-slate-700 text-left flex justify-between items-center">
+                            <span>Anpassa widgets</span>
+                            <IconChevronRight />
+                        </button>
                     </div>
 
                     <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4">
@@ -2134,6 +2473,33 @@
                         </div>
                     )}
 
+                    {showWidgetModal && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowWidgetModal(false)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                                    <h3 className="font-bold text-white text-lg">Välj widgets</h3>
+                                    <button onClick={() => setShowWidgetModal(false)} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    {Object.keys(widgetLabels).map(key => (
+                                        <div key={key} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-800">
+                                            <span className="text-slate-200 font-medium">{widgetLabels[key]}</span>
+                                            <button 
+                                                onClick={() => toggleWidget(key)}
+                                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ease-in-out ${visibleWidgets[key] ? 'bg-blue-600' : 'bg-slate-700'}`}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${visibleWidgets[key] ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="p-4 border-t border-slate-800">
+                                    <button className="btn-primary w-full" onClick={() => setShowWidgetModal(false)}>Klar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {showGuide && (
                         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowGuide(false)}>
                             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
@@ -2170,6 +2536,15 @@
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {showPlanModal && (
+                        <PlanSetupModal 
+                            todos={todos} 
+                            habits={habits} 
+                            onClose={() => setShowPlanModal(false)} 
+                            onSave={(plan) => { setDailyPlan(plan); setShowPlanModal(false); }} 
+                        />
                     )}
                 </div>
             );
@@ -2361,11 +2736,39 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('home');
-            const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt' });
+            const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt', details: '' });
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
             const [session, setSession] = useState(null);
             const [loading, setLoading] = useState(true);
             const [toast, setToast] = useState(null);
+            const [dailyPlan, setDailyPlan] = useState(null);
+            const [xp, setXp] = useState(() => parseInt(localStorage.getItem('mcere_xp') || '0'));
+
+            const addXp = (amount) => {
+                const newXp = xp + amount;
+                setXp(newXp);
+                localStorage.setItem('mcere_xp', newXp.toString());
+                showToast(`+${amount} XP ⭐`, 'success');
+                vibrate([50, 50]);
+            };
+            
+            // Widget State
+            const [visibleWidgets, setVisibleWidgets] = useState(() => {
+                const saved = localStorage.getItem('visibleWidgets');
+                return saved ? JSON.parse(saved) : {
+                    focus_stats: true,
+                    habit_stats: true,
+                    graph: true,
+                    categories: true,
+                    recent_activity: true
+                };
+            });
+
+            const toggleWidget = (key) => {
+                const newState = { ...visibleWidgets, [key]: !visibleWidgets[key] };
+                setVisibleWidgets(newState);
+                localStorage.setItem('visibleWidgets', JSON.stringify(newState));
+            };
 
             // Data states
             const [logs, setLogs] = useState([]);
@@ -2377,6 +2780,28 @@
                 document.body.className = theme === 'light' ? 'light-mode' : '';
                 localStorage.setItem('theme', theme);
             }, [theme]);
+
+            // --- Daily Plan Persistence ---
+            useEffect(() => {
+                const savedPlan = localStorage.getItem('dailyPlan');
+                if (savedPlan) {
+                    try {
+                        const parsed = JSON.parse(savedPlan);
+                        const today = new Date().toISOString().split('T')[0];
+                        if (parsed.date === today) {
+                            setDailyPlan(parsed);
+                        } else {
+                            localStorage.removeItem('dailyPlan');
+                        }
+                    } catch (e) { console.error("Plan parse error", e); }
+                }
+            }, []);
+
+            useEffect(() => {
+                if (dailyPlan) {
+                    localStorage.setItem('dailyPlan', JSON.stringify(dailyPlan));
+                }
+            }, [dailyPlan]);
 
             // --- Auth Listener ---
             useEffect(() => {
@@ -2530,7 +2955,12 @@
             };
 
             const startTodo = (todo) => {
-                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, category: todo.category, priority: todo.priority }));
+                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, category: todo.category, priority: todo.priority, details: todo.details }));
+                setActiveTab('timer');
+            };
+
+            const startHabitSession = (habit) => {
+                setTimerData(prev => ({ ...prev, goal: habit.name, durationMinutes: 15, originHabitId: habit.id, originTodoId: null, category: 'personligt', details: null }));
                 setActiveTab('timer');
             };
 
@@ -2551,18 +2981,15 @@
 
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-950 shadow-2xl border-x border-slate-900">
-                    <div className="p-4 flex items-center justify-center">
-                        <h1 className="font-bold text-lg tracking-tight text-blue-400 animate-logo-glow">M-<span className="text-white">CERE</span></h1>
-                    </div>
                     <div className="flex-1 overflow-y-auto relative no-scrollbar">
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
-                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} />
+                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} addXp={addXp} />
                         </div>
                         {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} showToast={showToast} />}
-                        {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} showToast={showToast} />}
-                        {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} showToast={showToast} />}
-                        {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} deleteLog={deleteLog} />}
-                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} showToast={showToast} />}
+                        {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} showToast={showToast} addXp={addXp} />}
+                        {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} onStartHabit={startHabitSession} showToast={showToast} addXp={addXp} />}
+                        {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} todos={todos} deleteLog={deleteLog} visibleWidgets={visibleWidgets} dailyPlan={dailyPlan} setDailyPlan={setDailyPlan} onStartTodo={startTodo} onStartHabit={startHabitSession} xp={xp} addXp={addXp} />}
+                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} showToast={showToast} visibleWidgets={visibleWidgets} toggleWidget={toggleWidget} />}
                     </div>
                     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                     <div className="h-24 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-8">
