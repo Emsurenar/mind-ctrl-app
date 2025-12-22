@@ -198,6 +198,7 @@
         const IconBook = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v2H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v2H6.5A2.5 2.5 0 0 1 4 4.5z"/></svg>;
         const IconBriefcase = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>;
         const IconUser = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+        const IconGraduationCap = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
 
         // --- AUDIO HELPER (Syntetiskt ljud, inga filer behövs) ---
         const playBeep = () => {
@@ -242,7 +243,7 @@
 
         // --- CATEGORIES HELPER ---
         const categories = {
-            plugg: { label: 'Plugg', icon: <IconBook />, color: 'text-blue-400', borderColor: 'border-blue-500/30', bgColor: 'bg-blue-900/20' },
+            plugg: { label: 'Plugg', icon: <IconGraduationCap />, color: 'text-blue-400', borderColor: 'border-blue-500/30', bgColor: 'bg-blue-900/20' },
             jobb: { label: 'Jobb', icon: <IconBriefcase />, color: 'text-green-400', borderColor: 'border-green-500/30', bgColor: 'bg-green-900/20' },
             personligt: { label: 'Personligt', icon: <IconUser />, color: 'text-purple-400', borderColor: 'border-purple-500/30', bgColor: 'bg-purple-900/20' },
         };
@@ -302,7 +303,6 @@
             const [review, setReview] = useState({ success: true, satisfaction: 50 });
             const [sessionBehaviors, setSessionBehaviors] = useState([]);
             const keepAliveAudioRef = useRef(null);
-            const [showGuide, setShowGuide] = useState(false);
             const [isAddingNote, setIsAddingNote] = useState(false);
             const [currentNote, setCurrentNote] = useState('');
 
@@ -517,7 +517,7 @@
                 await saveLog(sessionLog);
 
                 if (review.success) {
-                    addXp(100);
+                    addXp(Math.round(initialDuration / 60));
                 }
 
                 if (review.success && data.originTodoId) {
@@ -556,7 +556,6 @@
                 <div className="p-4 h-full flex flex-col">
                     <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Fokus</h2>
-                        <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto space-y-4 pb-4">
@@ -613,14 +612,6 @@
                     <div className="mt-2">
                         <button disabled={isInvalid} className={`w-full block font-bold text-xl py-4 rounded-2xl transition-all duration-500 shadow-xl ${isInvalid ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:scale-[1.02] active:scale-[0.98] shadow-orange-900/20'}`} onClick={startSession}>Starta timer</button>
                     </div>
-
-                    {showGuide && <GuideModal title="Guide: Fokus" onClose={() => setShowGuide(false)} steps={[
-                        "Ställ in önskad tid (5-120 min) och definiera ett konkret mål.",
-                        "Identifiera potentiella hinder och skatta din motivation.",
-                        "Starta timern. Appen förhindrar viloläge med ett tyst bakgrundsljud.",
-                        "Arbeta utan avbrott. Om du måste avbryta, använd 'Avbryt pass'.",
-                        "När larmet går: Utvärdera din insats och spara sessionen för statistik."
-                    ]} />}
                 </div>
             );
 
@@ -735,15 +726,12 @@
         };
 
         // 2. Impulskontroll (Oförändrad logik, bara inlistad för kompletthet)
-        const ImpulseControl = ({ logs, impulses, addImpulse, completeImpulse, showToast }) => {
+        const ImpulseControl = ({ logs, impulses, addImpulse, completeImpulse, showToast, deleteLog }) => {
             const [newImpulse, setNewImpulse] = useState({ desc: '', estTime: '' });
             const [now, setNow] = useState(Date.now());
             const [stats, setStats] = useState({ done: 0, forgotten: 0, percentage: 0 });
             const [isAdding, setIsAdding] = useState(false);
             const [showHistory, setShowHistory] = useState(false);
-            const [resetTrigger, setResetTrigger] = useState(0);
-            const [showGuide, setShowGuide] = useState(false);
-            const longPressTimer = useRef(null);
 
             useEffect(() => {
                 const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -751,9 +739,7 @@
             }, []);
 
             useEffect(() => {
-                // This effect now depends on the logs prop from App
-                const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
-                const validLogs = logs.filter(l => new Date(l.created_at).getTime() > resetTime);
+                const validLogs = logs;
                 
                 const now = Date.now();
                 const oneDay = 24 * 60 * 60 * 1000;
@@ -767,7 +753,7 @@
                     forgotten: recent.filter(l => l.type === 'impulse_forgotten').length,
                     percentage
                 });
-            }, [logs, resetTrigger]);
+            }, [logs]);
 
             const formatCountdown = (unlockTime) => {
                 const diff = unlockTime - now;
@@ -778,35 +764,16 @@
                 return `${h}h ${m}m ${s}s`;
             };
 
-            const handleLongPressStart = () => {
-                longPressTimer.current = setTimeout(() => {
-                    if(confirm("Vill du nollställa statistiken?")) {
-                        localStorage.setItem('impulseResetTime', Date.now().toString());
-                        setResetTrigger(prev => prev + 1);
-                    }
-                }, 800);
-            };
-
-            const handleLongPressEnd = () => {
-                if (longPressTimer.current) clearTimeout(longPressTimer.current);
-            };
-
             const isInvalid = !newImpulse.desc || !newImpulse.estTime;
 
             return (
                 <div className="p-4 h-full flex flex-col relative">
                     <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Impulser</h2>
-                        <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
                     <div 
                         className="mb-6 select-none active:scale-[0.99] transition-transform"
-                        onMouseDown={handleLongPressStart}
-                        onMouseUp={handleLongPressEnd}
-                        onMouseLeave={handleLongPressEnd}
-                        onTouchStart={handleLongPressStart}
-                        onTouchEnd={handleLongPressEnd}
                     >
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
@@ -890,10 +857,8 @@
                                 </div>
                                 <div className="p-4 overflow-y-auto space-y-6">
                                     {(() => {
-                                        const resetTime = parseInt(localStorage.getItem('impulseResetTime') || '0');
-                                        const validLogs = logs.filter(l => new Date(l.created_at).getTime() > resetTime);
-                                        const done = validLogs.filter(l => l.type === 'impulse_done').reverse();
-                                        const forgotten = validLogs.filter(l => l.type === 'impulse_forgotten').reverse();
+                                        const done = logs.filter(l => l.type === 'impulse_done').reverse();
+                                        const forgotten = logs.filter(l => l.type === 'impulse_forgotten').reverse();
 
                                         return (
                                             <>
@@ -910,7 +875,10 @@
                                                                     <p className="text-white font-medium text-sm truncate">{(l.data && l.data.desc) || l.desc || 'Okänd impuls'}</p>
                                                                     <p className="text-slate-500 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
-                                                                <div className="text-green-500 scale-75 origin-top-right"><IconCheck /></div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="text-green-500 scale-75"><IconCheck /></div>
+                                                                    <button onClick={(e) => { e.stopPropagation(); if(confirm('Ta bort?')) deleteLog(l.id); }} className="text-slate-600 hover:text-red-400 p-1 transition-colors"><IconTrash width={14} height={14} /></button>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -928,6 +896,7 @@
                                                                     <p className="text-slate-400 font-medium text-sm truncate">{(l.data && l.data.desc) || l.desc || 'Okänd impuls'}</p>
                                                                     <p className="text-slate-600 text-[10px] mt-0.5">{new Date(l.created_at).toLocaleString('sv-SE', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
                                                                 </div>
+                                                                <button onClick={(e) => { e.stopPropagation(); if(confirm('Ta bort?')) deleteLog(l.id); }} className="text-slate-600 hover:text-red-400 p-1 transition-colors"><IconTrash width={14} height={14} /></button>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -942,14 +911,6 @@
                             </div>
                         </div>
                     )}
-
-                    {showGuide && <GuideModal title="Guide: Impulser" onClose={() => setShowGuide(false)} steps={[
-                        "Registrera distraherande impulser (t.ex. 'kolla Instagram') och tidsåtgång.",
-                        "En obligatorisk väntetid (fördröjning) aktiveras för att kyla ner impulsen.",
-                        "När tiden gått ut: Besluta aktivt om du vill agera på impulsen eller förkasta den.",
-                        "Använd statistiken för att se hur ofta du står emot dina impulser.",
-                        "Långtryck på statistikrutorna för att nollställa räknarna."
-                    ]} />}
                 </div>
             );
         };
@@ -1014,6 +975,35 @@
                         </div>
                         <div className="p-4 border-t border-slate-800 mt-auto">
                             <button disabled={selectedTodoIds.length === 0 && selectedHabitIds.length === 0} onClick={handleSave} className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">Spara Mål</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NY KOMPONENT: TourOverlay ---
+        const TourOverlay = ({ step, currentStepIndex, totalSteps, onNext, onClose }) => {
+            return (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center pb-28 px-4 pointer-events-none">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto transition-opacity duration-500" onClick={onClose}></div>
+                    <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl w-full max-w-sm relative z-10 pointer-events-auto animate-scale-in">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-1">{step.title}</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed">{step.text}</p>
+                            </div>
+                            <button onClick={onClose} className="text-slate-500 hover:text-white p-1"><IconChevronRight className="rotate-90" /></button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-6">
+                            <div className="flex gap-1">
+                                {Array.from({ length: totalSteps }).map((_, i) => (
+                                    <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStepIndex ? 'w-6 bg-blue-500' : 'w-1.5 bg-slate-700'}`}></div>
+                                ))}
+                            </div>
+                            <button onClick={onNext} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-900/20">
+                                {currentStepIndex === totalSteps - 1 ? 'Klar' : 'Nästa'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1114,7 +1104,6 @@
             const [statsView, setStatsView] = useState(null);
             const [selectedGraphBarIndex, setSelectedGraphBarIndex] = useState(null);
             const [categoryFilter, setCategoryFilter] = useState('all');
-            const [showGuide, setShowGuide] = useState(false);
             const [showPlanModal, setShowPlanModal] = useState(false);
             const [showLevelInfo, setShowLevelInfo] = useState(false);
 
@@ -1245,9 +1234,9 @@
             }, [recentActivity]);
 
             // Level Calculation
-            const level = Math.floor(Math.sqrt(xp / 100)) + 1;
-            const xpForCurrentLevel = 100 * Math.pow(level - 1, 2);
-            const xpForNextLevel = 100 * Math.pow(level, 2);
+            const level = Math.floor(0.5 + Math.sqrt(0.25 + xp / 50));
+            const xpForCurrentLevel = 50 * level * (level - 1);
+            const xpForNextLevel = 50 * (level + 1) * level;
             const xpProgress = xp - xpForCurrentLevel;
             const xpNeeded = xpForNextLevel - xpForCurrentLevel;
             const progressPercent = Math.min(100, Math.max(0, (xpProgress / xpNeeded) * 100));
@@ -1846,13 +1835,6 @@
                         </div>
                     )}
 
-                    {showGuide && <GuideModal title="Guide: Start" onClose={() => setShowGuide(false)} steps={[
-                        "Din kontrollpanel för produktivitet. Växla vy mellan senaste dygnet (24h) och veckan (7d).",
-                        "Interaktiva grafer: Klicka på Fokus, Uppgifter eller Vanor för djupgående analys.",
-                        "Tidslinje: Klicka på staplarna i tidsgrafen för att se exakt vad du gjorde vid en viss tidpunkt.",
-                        "Logg: Scrolla längst ner för att se och hantera din historik."
-                    ]} />}
-
                     {showPlanModal && (
                         <PlanSetupModal 
                             todos={todos} 
@@ -1900,7 +1882,7 @@
                                         </div>
                                         <div className="flex justify-between items-center text-sm bg-slate-800/30 p-2 rounded-lg">
                                             <span className="text-slate-300">Fokuspass (lyckat)</span>
-                                            <span className="text-yellow-500 font-bold">+100 XP</span>
+                                            <span className="text-yellow-500 font-bold">1 XP / min</span>
                                         </div>
                                     </div>
                                 </div>
@@ -2014,7 +1996,6 @@
             const [isAdding, setIsAdding] = useState(false);
             const [editingTodo, setEditingTodo] = useState(null);
             const [viewingTodo, setViewingTodo] = useState(null);
-            const [showGuide, setShowGuide] = useState(false);
             const [animatingId, setAnimatingId] = useState(null);
 
             const sortedTodos = useMemo(() => {
@@ -2043,7 +2024,6 @@
                 <div className="p-4 h-full flex flex-col relative">
                     <div className="mb-6 flex justify-between items-center">
                         <h2 className="text-3xl font-bold text-white">Att göra</h2>
-                        <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-2 pb-20">
@@ -2153,14 +2133,6 @@
                             </div>
                         </div>
                     )}
-
-                    {showGuide && <GuideModal title="Guide: Att göra" onClose={() => setShowGuide(false)} steps={[
-                        "Skapa uppgifter med tidsestimat och prioritetsnivå (Hög/Medel/Låg).",
-                        "Starta (Play): Öppnar fokustimern förvald med uppgiftens mål och tid.",
-                        "Detaljer: Klicka på en uppgift för att läsa eller lägga till anteckningar.",
-                        "Redigera: Håll inne på en uppgift för att ändra innehåll eller prioritet.",
-                        "Slutför: Klicka på bocken för att logga uppgiften som klar och ta bort den från listan."
-                    ]} />}
                 </div>
             );
         };
@@ -2174,7 +2146,6 @@
             const isLongPress = useRef(false);
             const [view, setView] = useState('list');
             const [calendarDate, setCalendarDate] = useState(new Date());
-            const [showGuide, setShowGuide] = useState(false);
 
             const handleLongPressStart = (habit) => {
                 isLongPress.current = false;
@@ -2260,7 +2231,6 @@
                     <div className="mb-6 flex justify-between items-start">
                         <h2 className="text-3xl font-bold text-white">Vanor</h2>
                         <div className="flex gap-2">
-                            <button onClick={() => setShowGuide(true)} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"><IconHelp /></button>
                             <button onClick={() => setView(view === 'list' ? 'calendar' : 'list')} className="p-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors">
                                 {view === 'list' ? <IconCalendar /> : <IconList />}
                             </button>
@@ -2388,18 +2358,11 @@
                             </div>
                         </div>
                     )}
-
-                    {showGuide && <GuideModal title="Guide: Vanor" onClose={() => setShowGuide(false)} steps={[
-                        "Bygg rutiner genom att bocka av dagliga vanor.",
-                        "Streak-system: Håll sviten levande genom att utföra alla aktiva vanor varje dag.",
-                        "Kalendervy: Växla vy för att se historik och mönster över tid.",
-                        "Hantera: Håll inne på en vana för att redigera namn eller radera den permanent."
-                    ]} />}
                 </div>
             );
         };
 
-        const Settings = ({ theme, setTheme, onBack, showToast, visibleWidgets, toggleWidget }) => {
+        const Settings = ({ theme, setTheme, onBack, showToast, visibleWidgets, toggleWidget, startTour }) => {
             const [showPasswordModal, setShowPasswordModal] = useState(false);
             const [showWidgetModal, setShowWidgetModal] = useState(false);
             const [showGuide, setShowGuide] = useState(false);
@@ -2474,9 +2437,13 @@
                             <div className="p-2 bg-slate-800 rounded-lg text-green-400"><IconHelp /></div>
                             <span className="text-white font-bold text-lg">Hjälp & Info</span>
                         </div>
-                        <button onClick={() => setShowGuide(true)} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg transition-colors border border-slate-700 text-left flex justify-between items-center">
-                            <span>Hur använder jag appen?</span>
+                        <button onClick={() => setShowGuide(true)} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg transition-colors border border-slate-700 text-left flex justify-between items-center mb-2">
+                            <span>Guider & Instruktioner</span>
                             <IconChevronRight />
+                        </button>
+                        <button onClick={startTour} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg transition-colors border border-slate-700 text-left flex justify-between items-center">
+                            <span>Starta rundtur</span>
+                            <IconPlay width={18} height={18} />
                         </button>
                     </div>
 
@@ -2564,29 +2531,57 @@
                         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowGuide(false)}>
                             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
                                 <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
-                                    <h3 className="font-bold text-white text-lg">Guide: M-CERE</h3>
+                                    <h3 className="font-bold text-white text-lg">Hjälp & Guider</h3>
                                     <button onClick={() => setShowGuide(false)} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
                                 </div>
                                 <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-300">
                                     <div>
-                                        <h4 className="text-blue-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconTimer size={16}/> Fokus</h4>
-                                        <p>Arbeta i block. Sätt mål, minimera distraktioner och logga dina framsteg.</p>
+                                        <h4 className="text-slate-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconHome size={16}/> Start & Översikt</h4>
+                                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                                            <li>Din kontrollpanel för produktivitet. Växla vy mellan senaste dygnet (24h) och veckan (7d).</li>
+                                            <li>Interaktiva grafer: Klicka på Fokus, Uppgifter eller Vanor för djupgående analys.</li>
+                                            <li>Tidslinje: Klicka på staplarna i tidsgrafen för att se exakt vad du gjorde vid en viss tidpunkt.</li>
+                                            <li>Logg: Scrolla längst ner för att se och hantera din historik.</li>
+                                        </ul>
                                     </div>
                                     <div>
-                                        <h4 className="text-green-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconCheck size={16}/> To-do</h4>
-                                        <p>Planera din dag. Prioritera uppgifter och koppla dem direkt till fokustimern.</p>
+                                        <h4 className="text-blue-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconTimer size={16}/> Fokus</h4>
+                                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                                            <li>Ställ in önskad tid (5-120 min) och definiera ett konkret mål.</li>
+                                            <li>Identifiera potentiella hinder och skatta din motivation.</li>
+                                            <li>Starta timern. Appen förhindrar viloläge med ett tyst bakgrundsljud.</li>
+                                            <li>Arbeta utan avbrott. Om du måste avbryta, använd 'Avbryt pass'.</li>
+                                            <li>När larmet går: Utvärdera din insats och spara sessionen för statistik.</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-green-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconCheck size={16}/> Att göra</h4>
+                                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                                            <li>Skapa uppgifter med tidsestimat och prioritetsnivå (Hög/Medel/Låg).</li>
+                                            <li>Starta (Play): Öppnar fokustimern förvald med uppgiftens mål och tid.</li>
+                                            <li>Detaljer: Klicka på en uppgift för att läsa eller lägga till anteckningar.</li>
+                                            <li>Redigera: Håll inne på en uppgift för att ändra innehåll eller prioritet.</li>
+                                            <li>Slutför: Klicka på bocken för att logga uppgiften som klar och ta bort den från listan.</li>
+                                        </ul>
                                     </div>
                                     <div>
                                         <h4 className="text-purple-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconGrid size={16}/> Vanor</h4>
-                                        <p>Skapa hållbara rutiner. Följ din utveckling med streaks och kalender.</p>
+                                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                                            <li>Bygg rutiner genom att bocka av dagliga vanor.</li>
+                                            <li>Streak-system: Håll sviten levande genom att utföra alla aktiva vanor varje dag.</li>
+                                            <li>Kalendervy: Växla vy för att se historik och mönster över tid.</li>
+                                            <li>Hantera: Håll inne på en vana för att redigera namn eller radera den permanent.</li>
+                                        </ul>
                                     </div>
                                     <div>
                                         <h4 className="text-yellow-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconZap size={16}/> Impulser</h4>
-                                        <p>Träna din impulskontroll. Fördröj omedelbar tillfredsställelse för att bryta dåliga mönster.</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-slate-400 font-bold uppercase text-xs tracking-wider mb-2 flex items-center gap-2"><IconHome size={16}/> Start</h4>
-                                        <p>Analysera din data. Hitta mönster i din produktivitet och optimera din tid.</p>
+                                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                                            <li>Registrera distraherande impulser (t.ex. 'kolla Instagram') och tidsåtgång.</li>
+                                            <li>En obligatorisk väntetid (fördröjning) aktiveras för att kyla ner impulsen.</li>
+                                            <li>När tiden gått ut: Besluta aktivt om du vill agera på impulsen eller förkasta den.</li>
+                                            <li>Använd statistiken för att se hur ofta du står emot dina impulser.</li>
+                                            <li>Långtryck på statistikrutorna för att nollställa räknarna.</li>
+                                        </ul>
                                     </div>
                                 </div>
                                 <div className="p-4 border-t border-slate-800 mt-auto">
@@ -2794,6 +2789,31 @@
             const [toast, setToast] = useState(null);
             const [dailyPlan, setDailyPlan] = useState(null);
             const [xp, setXp] = useState(() => parseInt(localStorage.getItem('mcere_xp') || '0'));
+            const [tourState, setTourState] = useState({ active: false, step: 0 });
+
+            const TOUR_STEPS = [
+                { tab: 'home', title: 'Välkommen 👋', text: 'Välkommen till M-CERE! Låt oss ta en snabb rundtur för att visa hur du maximerar din produktivitet.' },
+                { tab: 'home', title: 'Översikt 🏠', text: 'Här landar du varje dag. Se din statistik, sätt dagens mål och håll koll på din XP-nivå.' },
+                { tab: 'timer', title: 'Fokus ⏱️', text: 'Hjärtat i appen. Ställ in tid, definiera ditt mål och starta timern. Appen hjälper dig att hålla fokus.' },
+                { tab: 'todo', title: 'Att göra ✅', text: 'Samla dina uppgifter här. Du kan starta ett fokuspass direkt från en uppgift för att logga tid på den.' },
+                { tab: 'habits', title: 'Vanor 📅', text: 'Bygg hållbara rutiner. Bocka av dina vanor varje dag för att bygga streaks och tjäna extra XP.' },
+                { tab: 'impulse', title: 'Impulser ⚡', text: 'Få kontroll över distraktioner. Registrera impulser här istället för att agera på dem direkt.' },
+                { tab: 'home', title: 'Redo! 🚀', text: 'Nu har du koll på läget. Börja med att sätta ett mål för dagen på startsidan eller starta ditt första pass!' }
+            ];
+
+            const startTour = () => {
+                setTourState({ active: true, step: 0 });
+                setActiveTab('home');
+            };
+
+            const nextTourStep = () => {
+                const nextStep = tourState.step + 1;
+                if (nextStep >= TOUR_STEPS.length) setTourState({ active: false, step: 0 });
+                else {
+                    setTourState({ ...tourState, step: nextStep });
+                    setActiveTab(TOUR_STEPS[nextStep].tab);
+                }
+            };
 
             const addXp = (amount) => {
                 const newXp = xp + amount;
@@ -3036,13 +3056,22 @@
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
                             <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} addXp={addXp} />
                         </div>
-                        {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} showToast={showToast} />}
+                        {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} showToast={showToast} deleteLog={deleteLog} />}
                         {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} showToast={showToast} addXp={addXp} />}
                         {activeTab === 'habits' && <HabitTracker habits={habits} logs={logs} addHabit={addHabit} toggleHabit={toggleHabit} saveHabitEdit={saveHabitEdit} deleteHabit={deleteHabit} onStartHabit={startHabitSession} showToast={showToast} addXp={addXp} />}
                         {activeTab === 'home' && <Dashboard onOpenSettings={() => setActiveTab('settings')} logs={logs} habits={habits} todos={todos} deleteLog={deleteLog} visibleWidgets={visibleWidgets} dailyPlan={dailyPlan} setDailyPlan={setDailyPlan} onStartTodo={startTodo} onStartHabit={startHabitSession} xp={xp} addXp={addXp} />}
-                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} showToast={showToast} visibleWidgets={visibleWidgets} toggleWidget={toggleWidget} />}
+                        {activeTab === 'settings' && <Settings theme={theme} setTheme={updateTheme} onBack={() => setActiveTab('home')} showToast={showToast} visibleWidgets={visibleWidgets} toggleWidget={toggleWidget} startTour={startTour} />}
                     </div>
                     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+                    {tourState.active && (
+                        <TourOverlay 
+                            step={TOUR_STEPS[tourState.step]} 
+                            currentStepIndex={tourState.step}
+                            totalSteps={TOUR_STEPS.length}
+                            onNext={nextTourStep} 
+                            onClose={() => setTourState({ active: false, step: 0 })} 
+                        />
+                    )}
                     <div className="h-24 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-8">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
                         <NavButton active={activeTab === 'todo'} onClick={() => setActiveTab('todo')} icon={<IconCheck />} label="To-do" />
