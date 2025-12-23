@@ -1093,7 +1093,6 @@
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-white font-bold text-lg">Dagens mål</h3>
-                                <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-white/50 hover:text-white transition-colors"><IconSettings width={16} height={16} /></button>
                             </div>
                             <p className="text-slate-400 text-xs">{totalCompleted} av {totalItems} klara</p>
                         </div>
@@ -1390,12 +1389,14 @@
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
                 logs.forEach(l => {
+                    if (!l.created_at || !l.data) return;
                     const date = new Date(l.created_at);
+                    if (isNaN(date.getTime())) return;
                     if (date < thirtyDaysAgo) return;
                     
                     // Poängsättning: Fokuspass = minuter, Todo = 30p, Vana = 10p
                     let score = 0;
-                    if (l.type === 'activity') score = (l.data.durationSeconds / 60);
+                    if (l.type === 'activity') score = ((l.data.durationSeconds || 0) / 60);
                     else if (l.type === 'todo_done') score = 30;
                     else if (l.type === 'habit_done') score = 10;
                     else return;
@@ -1403,9 +1404,11 @@
                     const day = (date.getDay() + 6) % 7; // 0 = Måndag
                     const h = date.getHours();
                     
-                    if (h >= 5 && h < 12) heatmap[day].morning += score;
-                    else if (h >= 12 && h < 18) heatmap[day].afternoon += score;
-                    else heatmap[day].evening += score;
+                    if (heatmap[day]) {
+                        if (h >= 5 && h < 12) heatmap[day].morning += score;
+                        else if (h >= 12 && h < 18) heatmap[day].afternoon += score;
+                        else heatmap[day].evening += score;
+                    }
                 });
 
                 // Hitta maxvärde för normalisering
@@ -1414,7 +1417,7 @@
                 });
 
                 // 2. Willpower Trend (Rolling average of resisted impulses)
-                const impulseLogs = logs.filter(l => l.type === 'impulse_done' || l.type === 'impulse_forgotten').sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                const impulseLogs = logs.filter(l => (l.type === 'impulse_done' || l.type === 'impulse_forgotten') && l.created_at).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
                 const trendPoints = [];
                 if (impulseLogs.length > 0) {
                     let windowSize = 5;
@@ -1436,7 +1439,7 @@
                 }
 
                 // 3. Correlation (Motivation/Satisfaction vs Duration)
-                const sessions = logs.filter(l => l.type === 'activity' && l.data.durationSeconds > 0).slice(0, 50);
+                const sessions = logs.filter(l => l.type === 'activity' && l.data && l.data.durationSeconds > 0).slice(0, 50);
                 const maxDuration = Math.max(...sessions.map(s => s.data.durationSeconds / 60), 60);
                 
                 const correlationData = {
@@ -1696,9 +1699,9 @@
                                         <div key={group.date} className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
                                             <div 
                                                 onClick={() => setExpandedDates(prev => ({...prev, [group.date]: !prev[group.date]}))}
-                                                className="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-800/50 transition-colors"
+                                                className="p-3 flex justify-between items-center cursor-pointer transition-colors"
                                             >
-                                                <span className="text-slate-400 text-sm font-bold capitalize">Summering av {new Date(group.date).toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                                <span className="text-slate-400 text-sm font-bold">Summering av {new Date(group.date).toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-slate-500">{group.logs.length} st</span>
                                                     <IconChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
