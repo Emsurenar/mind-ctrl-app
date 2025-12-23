@@ -295,8 +295,7 @@
         );
 
         // 1. Aktivitetstimer (Uppdaterad med Nedräkning & Alarm)
-        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById, showToast, addXp }) => {
-            const [state, setState] = useState('setup'); // setup, running, alarm, review
+        const ActivityTimer = ({ data, setData, saveLog, deleteTodoById, showToast, addXp, timerState: state, setTimerState: setState }) => {
             const [remaining, setRemaining] = useState(0);
             const [targetTime, setTargetTime] = useState(null);
             const [initialDuration, setInitialDuration] = useState(0); // Sparar totaltiden för loggen
@@ -1012,6 +1011,9 @@
 
         // --- NY KOMPONENT: DailyGoalWidget ---
         const DailyGoalWidget = ({ plan, todos, habits, logs, onStartTodo, onStartHabit, onEdit }) => {
+            const [showSummary, setShowSummary] = useState(false);
+            const longPressTimer = useRef(null);
+            const isLongPress = useRef(false);
             const todayStr = new Date().toISOString().split('T')[0];
             
             // Beräkna progress
@@ -1061,12 +1063,36 @@
                 }
             }
 
+            const handleStart = () => {
+                isLongPress.current = false;
+                longPressTimer.current = setTimeout(() => {
+                    isLongPress.current = true;
+                    setShowSummary(true);
+                    vibrate(20);
+                }, 500);
+            };
+
+            const handleEnd = () => {
+                if (longPressTimer.current) clearTimeout(longPressTimer.current);
+            };
+
+            // Data for summary
+            const remainingHabits = plan.habitIds.filter(id => !doneHabitIds.includes(id)).map(id => habits.find(h => h.id === id)).filter(Boolean);
+            const remainingTodos = plan.todoIds.filter(id => !doneTodoIds.includes(id)).map(id => todos.find(t => t.id === id)).filter(Boolean);
+            const completedHabits = plan.habitIds.filter(id => doneHabitIds.includes(id)).map(id => habits.find(h => h.id === id)).filter(Boolean);
+            const completedTodos = plan.todoIds.filter(id => doneTodoIds.includes(id)).map(id => todos.find(t => t.id === id)).filter(Boolean);
+
             return (
-                <div className={`bg-gradient-to-br ${gradeBg} border border-white/10 rounded-2xl p-5 mb-4 relative overflow-hidden`}>
+                <>
+                    <div 
+                        onMouseDown={handleStart} onMouseUp={handleEnd} onMouseLeave={handleEnd}
+                        onTouchStart={handleStart} onTouchEnd={handleEnd}
+                        className={`bg-gradient-to-br ${gradeBg} border border-white/10 rounded-2xl p-5 mb-4 relative overflow-hidden select-none active:scale-[0.98] transition-transform`}
+                    >
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-white font-bold text-lg">Dagens Mål</h3>
+                                <h3 className="text-white font-bold text-lg">Dagens mål</h3>
                                 <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-white/50 hover:text-white transition-colors"><IconSettings width={16} height={16} /></button>
                             </div>
                             <p className="text-slate-400 text-xs">{totalCompleted} av {totalItems} klara</p>
@@ -1085,7 +1111,7 @@
                                 <p className="text-white font-medium truncate">{nextType === 'habit' ? nextItem.name : nextItem.desc}</p>
                             </div>
                             <button 
-                                onClick={() => nextType === 'habit' ? onStartHabit(nextItem) : onStartTodo(nextItem)}
+                                onClick={(e) => { e.stopPropagation(); nextType === 'habit' ? onStartHabit(nextItem) : onStartTodo(nextItem); }}
                                 className="bg-white text-slate-900 p-2 rounded-lg hover:bg-blue-50 transition-colors shadow-lg active:scale-95"
                             >
                                 <IconPlay width={16} height={16} className="fill-current" />
@@ -1097,8 +1123,94 @@
                         </div>
                     )}
                 </div>
+
+                    {showSummary && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowSummary(false)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                                <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                                    <h3 className="font-bold text-white text-lg">Dagens mål</h3>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setShowSummary(false); onEdit(); }} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white border border-slate-700"><IconSettings width={18} height={18} /></button>
+                                        <button onClick={() => setShowSummary(false)} className="text-slate-400 hover:text-white"><IconChevronRight className="rotate-90" /></button>
+                                    </div>
+                                </div>
+                                <div className="p-6 overflow-y-auto space-y-6">
+                                    <div className="text-center">
+                                        <div className={`text-6xl font-black ${gradeColor} mb-2`}>{grade}</div>
+                                        <p className="text-slate-400 text-sm">{totalCompleted} av {totalItems} avklarade</p>
+                                        <div className="h-3 w-full bg-slate-800 rounded-full mt-4 overflow-hidden">
+                                            <div className={`h-full ${progress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{width: `${progress}%`}}></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-slate-400 text-xs font-bold uppercase mb-3 tracking-wider">Kvar att göra</h4>
+                                        {remainingHabits.length === 0 && remainingTodos.length === 0 && <p className="text-green-400 text-sm font-bold text-center bg-green-900/20 p-3 rounded-xl border border-green-500/20">Allt klart! Bra jobbat! 🎉</p>}
+                                        <div className="space-y-2">
+                                            {remainingHabits.map(h => (
+                                                <div key={h.id} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-800 opacity-75">
+                                                    <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                                    <span className="text-white text-sm">{h.name}</span>
+                                                </div>
+                                            ))}
+                                            {remainingTodos.map(t => (
+                                                <div key={t.id} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-800 opacity-75">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                    <span className="text-white text-sm">{t.desc}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {(completedHabits.length > 0 || completedTodos.length > 0) && (
+                                        <div>
+                                            <h4 className="text-slate-400 text-xs font-bold uppercase mb-3 tracking-wider">Avklarat</h4>
+                                            <div className="space-y-2">
+                                                {completedHabits.map(h => (
+                                                    <div key={h.id} className="flex items-center gap-3 p-3 bg-green-900/10 rounded-xl border border-green-500/10">
+                                                        <IconCheck className="w-4 h-4 text-green-500" />
+                                                        <span className="text-slate-400 text-sm line-through">{h.name}</span>
+                                                    </div>
+                                                ))}
+                                                {completedTodos.map(t => (
+                                                    <div key={t.id} className="flex items-center gap-3 p-3 bg-green-900/10 rounded-xl border border-green-500/10">
+                                                        <IconCheck className="w-4 h-4 text-green-500" />
+                                                        <span className="text-slate-400 text-sm line-through">{t.desc}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
             );
         };
+
+        // --- NY KOMPONENT: LogItem ---
+        const LogItem = ({ log, onClick }) => (
+            <div onClick={onClick} className="group flex items-center justify-between text-sm bg-slate-900/50 border border-slate-800 p-3 rounded-xl cursor-pointer hover:bg-slate-800 transition-colors">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`p-2 rounded-lg shrink-0 ${log.type === 'activity' ? 'bg-blue-500/10 text-blue-400' : 'bg-green-500/10 text-green-400'}`}>
+                        {log.type === 'activity' ? <IconTimer width={16} height={16} /> : <IconCheck width={16} height={16} />}
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                        <span className="text-white font-medium truncate">
+                            {log.data.goal || log.data.desc}
+                        </span>
+                        {log.data.category && categories[log.data.category] && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                                {React.cloneElement(categories[log.data.category].icon, { width: 10, height: 10, className: categories[log.data.category].color })}
+                                <span className={`text-[10px] ${categories[log.data.category].color}`}>{categories[log.data.category].label}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <span className="text-slate-500 text-xs whitespace-nowrap ml-2">{new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+        );
 
         // 3. Dashboard (Start/Huvudfönster)
         const Dashboard = ({ onOpenSettings, logs, habits, todos, deleteLog, visibleWidgets, dailyPlan, setDailyPlan, onStartTodo, onStartHabit, xp }) => {
@@ -1109,6 +1221,8 @@
             const [categoryFilter, setCategoryFilter] = useState('all');
             const [showPlanModal, setShowPlanModal] = useState(false);
             const [showLevelInfo, setShowLevelInfo] = useState(false);
+            const [expandedDates, setExpandedDates] = useState({});
+            const [correlationMetric, setCorrelationMetric] = useState('motivation');
 
             const getGreeting = () => {
                 const h = new Date().getHours();
@@ -1170,6 +1284,23 @@
                 // Check both activity logs and todo_done logs for category
                 return l.data && l.data.category === categoryFilter;
             }), [logs, categoryFilter]);
+
+            const groupedLogs = useMemo(() => {
+                const relevantLogs = filteredLogs.filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 50);
+                const groups = [];
+                const todayStr = new Date().toISOString().split('T')[0];
+
+                relevantLogs.forEach(l => {
+                    const date = new Date(l.created_at).toISOString().split('T')[0];
+                    let group = groups.find(g => g.date === date);
+                    if (!group) {
+                        group = { date, logs: [], isToday: date === todayStr };
+                        groups.push(group);
+                    }
+                    group.logs.push(l);
+                });
+                return groups;
+            }, [filteredLogs]);
 
             const { recentActivity, totalMinutes, recentTodos, totalTodos } = useMemo(() => {
                 const now = new Date();
@@ -1247,6 +1378,93 @@
                 const catPieGradient = `conic-gradient(${catPieSegments.map(s => s.style).join(', ')})`;
                 return { catPieSegments, catPieGradient, totalCategoryTime };
             }, [recentActivity]);
+
+            // --- NY STATISTIK: Complex Stats ---
+            const { heatmapData, willpowerTrend, correlationData } = useMemo(() => {
+                // 1. Heatmap Data (Day x Time of Day)
+                const heatmap = Array(7).fill(null).map(() => ({ morning: 0, afternoon: 0, evening: 0 }));
+                let maxHeat = 1;
+                
+                // Analysera senaste 30 dagarna
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                logs.forEach(l => {
+                    const date = new Date(l.created_at);
+                    if (date < thirtyDaysAgo) return;
+                    
+                    // Poängsättning: Fokuspass = minuter, Todo = 30p, Vana = 10p
+                    let score = 0;
+                    if (l.type === 'activity') score = (l.data.durationSeconds / 60);
+                    else if (l.type === 'todo_done') score = 30;
+                    else if (l.type === 'habit_done') score = 10;
+                    else return;
+
+                    const day = (date.getDay() + 6) % 7; // 0 = Måndag
+                    const h = date.getHours();
+                    
+                    if (h >= 5 && h < 12) heatmap[day].morning += score;
+                    else if (h >= 12 && h < 18) heatmap[day].afternoon += score;
+                    else heatmap[day].evening += score;
+                });
+
+                // Hitta maxvärde för normalisering
+                heatmap.forEach(d => {
+                    maxHeat = Math.max(maxHeat, d.morning, d.afternoon, d.evening);
+                });
+
+                // 2. Willpower Trend (Rolling average of resisted impulses)
+                const impulseLogs = logs.filter(l => l.type === 'impulse_done' || l.type === 'impulse_forgotten').sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                const trendPoints = [];
+                if (impulseLogs.length > 0) {
+                    let windowSize = 5;
+                    for (let i = 0; i <= impulseLogs.length - windowSize; i++) {
+                        const window = impulseLogs.slice(i, i + windowSize);
+                        const resisted = window.filter(l => l.type === 'impulse_forgotten').length;
+                        const ratio = (resisted / windowSize) * 100;
+                        trendPoints.push(ratio);
+                    }
+                }
+                // Skapa SVG path för trenden
+                let trendPath = "";
+                if (trendPoints.length > 1) {
+                    trendPath = "M " + trendPoints.map((val, i) => {
+                        const x = (i / (trendPoints.length - 1)) * 100;
+                        const y = 100 - val; // Invertera Y för SVG
+                        return `${x} ${y}`;
+                    }).join(" L ");
+                }
+
+                // 3. Correlation (Motivation/Satisfaction vs Duration)
+                const sessions = logs.filter(l => l.type === 'activity' && l.data.durationSeconds > 0).slice(0, 50);
+                const maxDuration = Math.max(...sessions.map(s => s.data.durationSeconds / 60), 60);
+                
+                const correlationData = {
+                    motivation: sessions.filter(s => s.data.motivation !== undefined).map(s => ({
+                        x: s.data.motivation,
+                        y: s.data.durationSeconds / 60,
+                        color: categories[s.data.category]?.color || 'text-slate-400'
+                    })),
+                    satisfaction: sessions.filter(s => s.data.satisfaction !== undefined).map(s => ({
+                        x: s.data.satisfaction,
+                        y: s.data.durationSeconds / 60,
+                        color: categories[s.data.category]?.color || 'text-slate-400'
+                    })),
+                    maxDuration
+                };
+
+                return { heatmapData: heatmap, maxHeat, willpowerTrend: trendPath, correlationData };
+            }, [logs]);
+
+            const getHeatColor = (val, max) => {
+                if (val === 0) return 'bg-slate-800/50';
+                const intensity = val / max;
+                // Returnera olika opaciteter av grönt/blått beroende på intensitet
+                if (intensity > 0.8) return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
+                if (intensity > 0.5) return 'bg-blue-600/80';
+                if (intensity > 0.2) return 'bg-blue-700/60';
+                return 'bg-blue-800/40';
+            };
 
             // Level Calculation
             const level = Math.floor(0.5 + Math.sqrt(0.25 + xp / 50));
@@ -1394,30 +1612,109 @@
                         </div>
                     )}
 
+                    {/* --- NYA WIDGETS --- */}
+                    
+                    {visibleWidgets.heatmap && (
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4">
+                            <h4 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider flex items-center gap-2"><IconCalendar width={14} height={14}/> Produktivitetsrytm (30d)</h4>
+                            <div className="grid grid-cols-[auto_repeat(7,1fr)] gap-1 text-[10px] text-slate-500 font-mono">
+                                <div className="flex flex-col justify-between py-1 pr-2 text-right">
+                                    <span>Fm</span><span>Em</span><span>Kv</span>
+                                </div>
+                                {heatmapData.map((d, i) => (
+                                    <div key={i} className="flex flex-col gap-1">
+                                        <div className={`h-6 rounded-sm transition-all ${getHeatColor(d.morning, maxHeat)}`}></div>
+                                        <div className={`h-6 rounded-sm transition-all ${getHeatColor(d.afternoon, maxHeat)}`}></div>
+                                        <div className={`h-6 rounded-sm transition-all ${getHeatColor(d.evening, maxHeat)}`}></div>
+                                        <span className="text-center mt-1">{['M','T','O','T','F','L','S'][i]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {visibleWidgets.willpower && willpowerTrend && (
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4 relative overflow-hidden">
+                            <div className="flex justify-between items-start mb-4 relative z-10">
+                                <div>
+                                    <h4 className="text-slate-400 text-xs uppercase font-bold tracking-wider flex items-center gap-2"><IconZap width={14} height={14}/> Viljestyrka</h4>
+                                    <p className="text-slate-500 text-[10px]">Trend för motstådda impulser</p>
+                                </div>
+                            </div>
+                            <div className="h-24 w-full relative">
+                                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible">
+                                    {/* Grid lines */}
+                                    <line x1="0" y1="0" x2="100" y2="0" stroke="#334155" strokeWidth="0.5" strokeDasharray="2" />
+                                    <line x1="0" y1="50" x2="100" y2="50" stroke="#334155" strokeWidth="0.5" strokeDasharray="2" />
+                                    <line x1="0" y1="100" x2="100" y2="100" stroke="#334155" strokeWidth="0.5" strokeDasharray="2" />
+                                    
+                                    <path d={willpowerTrend} fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" className="drop-shadow-lg" />
+                                </svg>
+                                <div className="absolute top-0 right-0 text-[10px] text-green-500 font-bold">100%</div>
+                                <div className="absolute bottom-0 right-0 text-[10px] text-red-500 font-bold">0%</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {visibleWidgets.correlation && (correlationData.motivation.length > 0 || correlationData.satisfaction.length > 0) && (
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-4">
+                            <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-slate-400 text-xs uppercase font-bold tracking-wider flex items-center gap-2"><IconTimer width={14} height={14}/> Fokusanalys</h4>
+                                <div className="flex bg-slate-800 rounded-lg p-0.5">
+                                    <button onClick={() => setCorrelationMetric('motivation')} className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${correlationMetric === 'motivation' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>Motiv.</button>
+                                    <button onClick={() => setCorrelationMetric('satisfaction')} className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${correlationMetric === 'satisfaction' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>Nöjdhet</button>
+                                </div>
+                            </div>
+                            <div className="h-40 w-full relative border-l border-b border-slate-700 bg-slate-900/30 rounded-bl-lg">
+                                <div className="absolute -left-6 top-0 text-[8px] text-slate-500">{Math.round(correlationData.maxDuration)}m</div>
+                                <div className="absolute -left-6 bottom-0 text-[8px] text-slate-500">0m</div>
+                                {correlationData[correlationMetric].map((pt, i) => (
+                                    <div 
+                                        key={i} 
+                                        className={`absolute w-2 h-2 rounded-full border border-slate-900 shadow-sm ${pt.color.replace('text-', 'bg-')}`}
+                                        style={{ left: `${pt.x}%`, bottom: `${(pt.y / correlationData.maxDuration) * 100}%`, transform: 'translate(-50%, 50%)' }}
+                                        title={`${correlationMetric === 'motivation' ? 'Motivation' : 'Nöjdhet'}: ${pt.x}%, Tid: ${Math.round(pt.y)}m`}
+                                    ></div>
+                                ))}
+                                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 capitalize">{correlationMetric === 'motivation' ? 'Motivation' : 'Nöjdhet'} (0-100%) ⮕</div>
+                                <div className="absolute -left-6 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-slate-500">Tid (min) ⮕</div>
+                            </div>
+                        </div>
+                    )}
+
                     {visibleWidgets.recent_activity && <div className="flex flex-col">
                         <h3 className="text-slate-400 text-xs uppercase font-bold mb-3 tracking-wider text-left">Senaste händelser</h3>
                         <div className="space-y-2 pr-1">
-                            {filteredLogs.filter(l => l.type === 'activity' || l.type === 'todo_done').slice(0, 20).map((l) => (
-                                <div key={l.id} onClick={() => setSelectedLog(l)} className="group flex items-center justify-between text-sm bg-slate-900/50 border border-slate-800 p-3 rounded-xl cursor-pointer hover:bg-slate-800 transition-colors">
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className={`p-2 rounded-lg shrink-0 ${l.type === 'activity' ? 'bg-blue-500/10 text-blue-400' : 'bg-green-500/10 text-green-400'}`}>
-                                            {l.type === 'activity' ? <IconTimer width={16} height={16} /> : <IconCheck width={16} height={16} />}
-                                        </div>
-                                        <div className="flex flex-col overflow-hidden">
-                                            <span className="text-white font-medium truncate">
-                                                {l.data.goal || l.data.desc}
-                                            </span>
-                                            {l.data.category && categories[l.data.category] && (
-                                                <div className="flex items-center gap-1 mt-0.5">
-                                                    {React.cloneElement(categories[l.data.category].icon, { width: 10, height: 10, className: categories[l.data.category].color })}
-                                                    <span className={`text-[10px] ${categories[l.data.category].color}`}>{categories[l.data.category].label}</span>
+                            {groupedLogs.map(group => {
+                                if (group.isToday) {
+                                    return group.logs.map(l => (
+                                        <LogItem key={l.id} log={l} onClick={() => setSelectedLog(l)} />
+                                    ));
+                                } else {
+                                    const isExpanded = expandedDates[group.date];
+                                    return (
+                                        <div key={group.date} className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
+                                            <div 
+                                                onClick={() => setExpandedDates(prev => ({...prev, [group.date]: !prev[group.date]}))}
+                                                className="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-800/50 transition-colors"
+                                            >
+                                                <span className="text-slate-400 text-sm font-bold capitalize">Summering av {new Date(group.date).toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-slate-500">{group.logs.length} st</span>
+                                                    <IconChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                                </div>
+                                            </div>
+                                            {isExpanded && (
+                                                <div className="border-t border-slate-800/50 bg-slate-900/50 p-2 space-y-2 animate-fade-in">
+                                                    {group.logs.map(l => (
+                                                        <LogItem key={l.id} log={l} onClick={() => setSelectedLog(l)} />
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                    <span className="text-slate-500 text-xs whitespace-nowrap ml-2">{new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                </div>
-                            ))}
+                                    );
+                                }
+                            })}
                         </div>
                     </div>}
 
@@ -2318,13 +2615,13 @@
                                         />
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => setIsAdding(false)} className="btn-secondary">Avbryt</button>
+                                        <button onClick={() => setIsAdding(false)} className="btn-secondary flex-1">Avbryt</button>
                                         <button onClick={async () => {
                                             await addHabit(newHabit);
                                             setNewHabit('');
                                             setIsAdding(false);
                                             showToast("Vana tillagd", "success");
-                                        }} className="btn-primary bg-gradient-to-r from-orange-500 to-orange-600">Spara</button>
+                                        }} className="bg-green-900/20 hover:bg-green-900/40 text-green-400 font-bold py-3 px-4 rounded-xl transition-colors active:scale-95 flex-1">Spara</button>
                                     </div>
                                 </div>
                             </div>
@@ -2390,7 +2687,10 @@
                 habit_stats: 'Vanor & Streak',
                 graph: 'Tidsgraf',
                 categories: 'Kategorifördelning',
-                recent_activity: 'Senaste händelser'
+                recent_activity: 'Senaste händelser',
+                heatmap: 'Produktivitetsrytm (Heatmap)',
+                willpower: 'Viljestyrka (Trend)',
+                correlation: 'Fokusanalys (Scatter)'
             };
 
             const handleChangePassword = async () => {
@@ -2799,6 +3099,8 @@
         const App = () => {
             const [activeTab, setActiveTab] = useState('home');
             const [timerData, setTimerData] = useState({ goal: '', challenges: '', motivation: 50, durationMinutes: 25, category: 'personligt', details: '' });
+            const [timerState, setTimerState] = useState('setup');
+            const [interruptModal, setInterruptModal] = useState(null);
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
             const [session, setSession] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -2847,7 +3149,10 @@
                     habit_stats: true,
                     graph: true,
                     categories: true,
-                    recent_activity: true
+                    recent_activity: true,
+                    heatmap: false,
+                    willpower: false,
+                    correlation: false
                 };
             });
 
@@ -3042,13 +3347,36 @@
             };
 
             const startTodo = (todo) => {
-                setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, category: todo.category, priority: todo.priority, details: todo.details }));
-                setActiveTab('timer');
+                if (timerState === 'running') {
+                    setInterruptModal({ type: 'todo', item: todo });
+                } else {
+                    setTimerData(prev => ({ ...prev, goal: todo.desc, durationMinutes: todo.minutes, originTodoId: todo.id, originHabitId: null, category: todo.category, priority: todo.priority, details: todo.details }));
+                    setActiveTab('timer');
+                }
             };
 
             const startHabitSession = (habit) => {
-                setTimerData(prev => ({ ...prev, goal: habit.name, durationMinutes: 15, originHabitId: habit.id, originTodoId: null, category: 'personligt', details: null }));
+                if (timerState === 'running') {
+                    setInterruptModal({ type: 'habit', item: habit });
+                } else {
+                    setTimerData(prev => ({ ...prev, goal: habit.name, durationMinutes: 15, originHabitId: habit.id, originTodoId: null, category: 'personligt', details: null }));
+                    setActiveTab('timer');
+                }
+            };
+
+            const handleConfirmInterrupt = () => {
+                if (!interruptModal) return;
+                const { type, item } = interruptModal;
+                
+                if (type === 'todo') {
+                    setTimerData(prev => ({ ...prev, goal: item.desc, durationMinutes: item.minutes, originTodoId: item.id, originHabitId: null, category: item.category, priority: item.priority, details: item.details }));
+                } else {
+                    setTimerData(prev => ({ ...prev, goal: item.name, durationMinutes: 15, originHabitId: item.id, originTodoId: null, category: 'personligt', details: null }));
+                }
+                
+                setTimerState('setup');
                 setActiveTab('timer');
+                setInterruptModal(null);
             };
 
             if (!session) {
@@ -3070,7 +3398,7 @@
                 <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-950 shadow-2xl border-x border-slate-900">
                     <div className="flex-1 overflow-y-auto relative no-scrollbar">
                         <div className={activeTab === 'timer' ? 'h-full' : 'hidden'}>
-                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} addXp={addXp} />
+                            <ActivityTimer data={timerData} setData={setTimerData} saveLog={saveLog} deleteTodoById={deleteTodoById} showToast={showToast} addXp={addXp} timerState={timerState} setTimerState={setTimerState} />
                         </div>
                         {activeTab === 'impulse' && <ImpulseControl logs={logs} impulses={impulses} addImpulse={addImpulse} completeImpulse={completeImpulse} showToast={showToast} deleteLog={deleteLog} />}
                         {activeTab === 'todo' && <TodoList todos={todos} onStartTodo={startTodo} addTodo={addTodo} completeTodo={completeTodo} deleteTodo={deleteTodoById} saveTodoEdit={saveTodoEdit} showToast={showToast} addXp={addXp} />}
@@ -3087,6 +3415,18 @@
                             onNext={nextTourStep} 
                             onClose={() => setTourState({ active: false, step: 0 })} 
                         />
+                    )}
+                    {interruptModal && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setInterruptModal(null)}>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in p-6" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-xl font-bold text-white mb-2">Pågående session</h3>
+                                <p className="text-slate-400 mb-6">Du har redan en aktiv fokus-session. Vill du avbryta den och starta den nya?</p>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setInterruptModal(null)} className="btn-secondary flex-1">Fortsätt nuvarande</button>
+                                    <button onClick={handleConfirmInterrupt} className="btn-primary bg-red-600 hover:bg-red-500 flex-1">Starta ny</button>
+                                </div>
+                            </div>
+                        </div>
                     )}
                     <div className="h-24 bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-8">
                         <NavButton active={activeTab === 'timer'} onClick={() => setActiveTab('timer')} icon={<IconTimer />} label="Fokus" />
