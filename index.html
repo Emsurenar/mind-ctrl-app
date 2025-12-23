@@ -1379,7 +1379,7 @@
             }, [recentActivity]);
 
             // --- NY STATISTIK: Complex Stats ---
-            const { heatmapData, willpowerTrend, correlationData } = useMemo(() => {
+            const { heatmapData, willpowerTrend, correlationData, maxHeat } = useMemo(() => {
                 // 1. Heatmap Data (Day x Time of Day)
                 const heatmap = Array(7).fill(null).map(() => ({ morning: 0, afternoon: 0, evening: 0 }));
                 let maxHeat = 1;
